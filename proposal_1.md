@@ -14,7 +14,7 @@
 Sistema web de venta de entradas para partidos de fútsal de la Asociación Rosarina. Permite consultar la programación de partidos y comprar entradas de forma online, generando un código QR para el acceso al evento. Busca reemplazar la venta presencial en efectivo, agilizando el ingreso a los partidos.
 
 ### Modelo
-![imagen del modelo]()
+![DER](docs/img/DER%20TP%20DSW.drawio.png)
 
 ## Alcance Funcional
 
