@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Rol {
+  id       Int       @id @default(autoincrement())
+  nombre   String    @unique
+  usuarios Usuario[]
+}
+
+model Usuario {
+  id       Int      @id @default(autoincrement())
+  nombre   String
+  email    String   @unique
+  password String
+  rol      Rol      @relation(fields: [rolId], references: [id])
+  rolId    Int
+  entradas Entrada[]
+  creadoEn DateTime @default(now())
+}
+
+model Club {
+  id               Int       @id @default(autoincrement())
+  nombre           String
+  canchas          Cancha[]
+  partidosLocal    Partido[] @relation("Local")
+  partidosVisitante Partido[] @relation("Visitante")
+}
+
+model Cancha {
+  id       Int       @id @default(autoincrement())
+  nombre   String
+  capacidad Int
+  club     Club      @relation(fields: [clubId], references: [id])
+  clubId   Int
+  partidos Partido[]
+}
+
+model Partido {
+  id                Int           @id @default(autoincrement())
+  fecha             DateTime
+  precio            Float
+  capacidad         Int
+  clubLocal         Club          @relation("Local", fields: [clubLocalId], references: [id])
+  clubLocalId       Int
+  clubVisitante     Club          @relation("Visitante", fields: [clubVisitanteId], references: [id])
+  clubVisitanteId   Int
+  cancha            Cancha        @relation(fields: [canchaId], references: [id])
+  canchaId          Int
+  entradas          Entrada[]
+  estado            EstadoPartido @default(PROGRAMADO)
+  creadoEn          DateTime      @default(now())
+}
+
+enum EstadoPartido {
+  PROGRAMADO
+  ACTIVO
+  FINALIZADO
+  CANCELADO
+}
+
+model Entrada {
+  id           Int           @id @default(autoincrement())
+  codigo       String        @unique
+  estado       EstadoEntrada @default(ACTIVA)
+  mpPaymentId  String?
+  usuario      Usuario       @relation(fields: [usuarioId], references: [id])
+  usuarioId    Int
+  partido      Partido       @relation(fields: [partidoId], references: [id])
+  partidoId    Int
+  creadoEn     DateTime      @default(now())
+}
+
+enum EstadoEntrada {
+  ACTIVA
+  USADA
+  CANCELADA
+}
