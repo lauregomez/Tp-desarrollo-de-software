@@ -25,10 +25,10 @@ model Usuario {
 }
 
 model Club {
-  id               Int       @id @default(autoincrement())
-  nombre           String
-  canchas          Cancha[]
-  partidosLocal    Partido[] @relation("Local")
+  id                Int       @id @default(autoincrement())
+  nombre            String    @unique
+  canchas           Cancha[]
+  partidosLocal     Partido[] @relation("Local")
   partidosVisitante Partido[] @relation("Visitante")
 }
 
@@ -42,42 +42,45 @@ model Cancha {
 }
 
 model Partido {
-  id                Int           @id @default(autoincrement())
-  fecha             DateTime
-  precio            Float
-  capacidad         Int
-  clubLocal         Club          @relation("Local", fields: [clubLocalId], references: [id])
-  clubLocalId       Int
-  clubVisitante     Club          @relation("Visitante", fields: [clubVisitanteId], references: [id])
-  clubVisitanteId   Int
-  cancha            Cancha        @relation(fields: [canchaId], references: [id])
-  canchaId          Int
-  entradas          Entrada[]
-  estado            EstadoPartido @default(PROGRAMADO)
-  creadoEn          DateTime      @default(now())
+  id              Int           @id @default(autoincrement())
+  fecha           DateTime
+  precio          Decimal       @db.Decimal(10, 2)
+  clubLocal       Club          @relation("Local", fields: [clubLocalId], references: [id])
+  clubLocalId     Int
+  clubVisitante   Club          @relation("Visitante", fields: [clubVisitanteId], references: [id])
+  clubVisitanteId Int
+  cancha          Cancha        @relation(fields: [canchaId], references: [id])
+  canchaId        Int
+  entradas        Entrada[]
+  estado          EstadoPartido @default(BORRADOR)
+  creadoEn        DateTime      @default(now())
 }
 
 enum EstadoPartido {
-  PROGRAMADO
-  ACTIVO
+  BORRADOR
+  PUBLICADO
   FINALIZADO
   CANCELADO
 }
 
 model Entrada {
-  id           Int           @id @default(autoincrement())
-  codigo       String        @unique
-  estado       EstadoEntrada @default(ACTIVA)
-  mpPaymentId  String?
-  usuario      Usuario       @relation(fields: [usuarioId], references: [id])
-  usuarioId    Int
-  partido      Partido       @relation(fields: [partidoId], references: [id])
-  partidoId    Int
-  creadoEn     DateTime      @default(now())
+  id              Int           @id @default(autoincrement())
+  codigo          String?       @unique
+  estado          EstadoEntrada @default(PENDIENTE)
+  precioPagado    Decimal       @db.Decimal(10, 2)
+  reservaExpiraEn DateTime?
+  mpPaymentId     String?
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id])
+  usuarioId       Int
+  partido         Partido       @relation(fields: [partidoId], references: [id])
+  partidoId       Int
+  creadoEn        DateTime      @default(now())
+
+  @@index([partidoId, estado])
 }
 
 enum EstadoEntrada {
+  PENDIENTE
   ACTIVA
   USADA
-  CANCELADA
 }
