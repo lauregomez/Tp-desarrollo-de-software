@@ -32,6 +32,16 @@ export const courtController = {
             res.status(400).json({ message: 'El campo nombre es obligatorio' });
             return;
         }
+                
+        if (!Number.isInteger(capacity) || capacity <= 0) {
+            res.status(400).json({ message: 'La capacidad debe ser un número entero positivo' });
+            return;
+        }
+
+        if (!Number.isInteger(clubId) || clubId <= 0) {
+            res.status(400).json({ message: 'El club indicado no es válido' });
+            return;
+        }
 
         try {
             const court = await courtService.create({ name: name.trim(), capacity, clubId });
@@ -83,6 +93,16 @@ export const courtController = {
 
         if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
             res.status(400).json({ message: 'El campo nombre no puede estar vacío' });
+            return;
+        }
+
+                if (capacity !== undefined && (!Number.isInteger(capacity) || capacity <= 0)) {
+            res.status(400).json({ message: 'La capacidad debe ser un número entero positivo' });
+            return;
+        }
+
+        if (clubId !== undefined && (!Number.isInteger(clubId) || clubId <= 0)) {
+            res.status(400).json({ message: 'El club indicado no es válido' });
             return;
         }
 
