@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
-import { canchaService } from './cancha.service';
+import { courtService } from './court.service';
 
-export const canchaController = {
+export const courtController = {
 
     async getAll(req: Request, res: Response): Promise<void> {
-        const canchas = await canchaService.findAll();
-        res.json(canchas);
+        const courts = await courtService.findAll();
+        res.json(courts);
     },
 
     async getById(req: Request, res: Response): Promise<void> {
@@ -17,25 +17,25 @@ export const canchaController = {
             return;
         }
 
-        const cancha = await canchaService.findById(id);
-        if (!cancha) {
+        const court = await courtService.findById(id);
+        if (!court) {
             res.status(404).json({ message: 'Cancha no encontrada' });
             return;
         }
-        res.json(cancha);
+        res.json(court);
     },
 
     async create(req: Request, res: Response): Promise<void> {
-        const { nombre, capacidad, clubId } = req.body;
+        const { name, capacity, clubId } = req.body;
 
-        if (typeof nombre !== 'string' || nombre.trim() === '') {
+        if (typeof name !== 'string' || name.trim() === '') {
             res.status(400).json({ message: 'El campo nombre es obligatorio' });
             return;
         }
 
         try {
-            const cancha = await canchaService.create({ nombre: nombre.trim(), capacidad, clubId });
-            res.status(201).json(cancha);
+            const court = await courtService.create({ name: name.trim(), capacity, clubId });
+            res.status(201).json(court);
         } catch (error) {
             if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -57,7 +57,7 @@ export const canchaController = {
         }
 
         try {
-            await canchaService.remove(id);
+            await courtService.remove(id);
             res.status(204).send();
         } catch (error) {
             if (
@@ -79,16 +79,16 @@ export const canchaController = {
             return;
         }
 
-        const { nombre, capacidad, clubId } = req.body;
+        const { name, capacity, clubId } = req.body;
 
-        if (nombre !== undefined && (typeof nombre !== 'string' || nombre.trim() === '')) {
+        if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
             res.status(400).json({ message: 'El campo nombre no puede estar vacío' });
             return;
         }
 
         try {
-            const cancha = await canchaService.update(id, { nombre: nombre?.trim(), capacidad, clubId });
-            res.json(cancha);
+            const court = await courtService.update(id, { name: name?.trim(), capacity, clubId });
+            res.json(court);
         } catch (error) {
             if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&

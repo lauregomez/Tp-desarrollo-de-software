@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import clubRoutes from './modules/club/club.routes';
+import courtRoutes from './modules/court/court.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 dotenv.config();
@@ -16,6 +17,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/clubs', clubRoutes);
+app.use('/api/courts', courtRoutes);
 
 app.use(errorHandler);
 

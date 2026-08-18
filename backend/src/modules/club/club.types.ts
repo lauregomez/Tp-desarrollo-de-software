@@ -1,12 +1,5 @@
-export interface Club {
-  id: number;
-  nombre: string;
-}
+import { Prisma, Club } from '@prisma/client';
 
-export interface CreateClubDto {
-  nombre: string;
-}
-
-export interface UpdateClubDto {
-  nombre?: string;
-}
+export type { Club };
+export type CreateClubDto = Prisma.ClubCreateInput;
+export type UpdateClubDto = Prisma.ClubUpdateInput;

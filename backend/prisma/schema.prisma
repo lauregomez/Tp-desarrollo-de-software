@@ -7,80 +7,91 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Rol {
-  id       Int       @id @default(autoincrement())
-  nombre   String    @unique
-  usuarios Usuario[]
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+
+  @@map("roles")
 }
 
-model Usuario {
-  id       Int      @id @default(autoincrement())
-  nombre   String
-  email    String   @unique
-  password String
-  rol      Rol      @relation(fields: [rolId], references: [id])
-  rolId    Int
-  entradas Entrada[]
-  creadoEn DateTime @default(now())
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @relation(fields: [roleId], references: [id])
+  roleId       Int      @map("role_id")
+  tickets      Ticket[]
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
 }
 
 model Club {
-  id                Int       @id @default(autoincrement())
-  nombre            String    @unique
-  canchas           Cancha[]
-  partidosLocal     Partido[] @relation("Local")
-  partidosVisitante Partido[] @relation("Visitante")
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  courts      Court[]
+  homeMatches Match[] @relation("HomeClub")
+  awayMatches Match[] @relation("AwayClub")
+
+  @@map("clubs")
 }
 
-model Cancha {
-  id       Int       @id @default(autoincrement())
-  nombre   String
-  capacidad Int
-  club     Club      @relation(fields: [clubId], references: [id])
-  clubId   Int
-  partidos Partido[]
+model Court {
+  id       Int     @id @default(autoincrement())
+  name     String
+  capacity Int
+  club     Club    @relation(fields: [clubId], references: [id])
+  clubId   Int     @map("club_id")
+  matches  Match[]
+
+  @@map("courts")
 }
 
-model Partido {
-  id              Int           @id @default(autoincrement())
-  fecha           DateTime
-  precio          Decimal       @db.Decimal(10, 2)
-  clubLocal       Club          @relation("Local", fields: [clubLocalId], references: [id])
-  clubLocalId     Int
-  clubVisitante   Club          @relation("Visitante", fields: [clubVisitanteId], references: [id])
-  clubVisitanteId Int
-  cancha          Cancha        @relation(fields: [canchaId], references: [id])
-  canchaId        Int
-  entradas        Entrada[]
-  estado          EstadoPartido @default(BORRADOR)
-  creadoEn        DateTime      @default(now())
+model Match {
+  id         Int         @id @default(autoincrement())
+  startsAt   DateTime    @map("starts_at")
+  price      Decimal     @db.Decimal(10, 2)
+  homeClub   Club        @relation("HomeClub", fields: [homeClubId], references: [id])
+  homeClubId Int         @map("home_club_id")
+  awayClub   Club        @relation("AwayClub", fields: [awayClubId], references: [id])
+  awayClubId Int         @map("away_club_id")
+  court      Court       @relation(fields: [courtId], references: [id])
+  courtId    Int         @map("court_id")
+  tickets    Ticket[]
+  status     MatchStatus @default(DRAFT)
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  @@map("matches")
 }
 
-enum EstadoPartido {
-  BORRADOR
-  PUBLICADO
-  FINALIZADO
-  CANCELADO
+enum MatchStatus {
+  DRAFT
+  PUBLISHED
+  FINISHED
+  CANCELLED
 }
 
-model Entrada {
-  id              Int           @id @default(autoincrement())
-  codigo          String?       @unique
-  estado          EstadoEntrada @default(PENDIENTE)
-  precioPagado    Decimal       @db.Decimal(10, 2)
-  reservaExpiraEn DateTime?
-  mpPaymentId     String?
-  usuario         Usuario       @relation(fields: [usuarioId], references: [id])
-  usuarioId       Int
-  partido         Partido       @relation(fields: [partidoId], references: [id])
-  partidoId       Int
-  creadoEn        DateTime      @default(now())
+model Ticket {
+  id            Int          @id @default(autoincrement())
+  code          String?      @unique
+  status        TicketStatus @default(PENDING)
+  pricePaid     Decimal      @db.Decimal(10, 2) @map("price_paid")
+  reservedUntil DateTime?    @map("reserved_until")
+  mpPaymentId   String?      @map("mp_payment_id")
+  user          User         @relation(fields: [userId], references: [id])
+  userId        Int          @map("user_id")
+  match         Match        @relation(fields: [matchId], references: [id])
+  matchId       Int          @map("match_id")
+  createdAt     DateTime     @default(now()) @map("created_at")
 
-  @@index([partidoId, estado])
+  @@index([matchId, status])
+  @@map("tickets")
 }
 
-enum EstadoEntrada {
-  PENDIENTE
-  ACTIVA
-  USADA
+enum TicketStatus {
+  PENDING
+  ACTIVE
+  USED
 }

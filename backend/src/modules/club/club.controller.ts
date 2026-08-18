@@ -10,12 +10,10 @@ export const clubController = {
 
   async getById(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
-
     if (Number.isNaN(id)) {
       res.status(400).json({ message: 'El id debe ser un número' });
       return;
     }
-
     const club = await clubService.findById(id);
     if (!club) {
       res.status(404).json({ message: 'Club no encontrado' });
@@ -25,15 +23,13 @@ export const clubController = {
   },
 
   async create(req: Request, res: Response): Promise<void> {
-    const { nombre } = req.body;
-
-    if (typeof nombre !== 'string' || nombre.trim() === '') {
+    const { name } = req.body;
+    if (typeof name !== 'string' || name.trim() === '') {
       res.status(400).json({ message: 'El campo nombre es obligatorio' });
       return;
     }
-
     try {
-      const club = await clubService.create({ nombre: nombre.trim() });
+      const club = await clubService.create({ name: name.trim() });
       res.status(201).json(club);
     } catch (error) {
       if (
@@ -49,21 +45,17 @@ export const clubController = {
 
   async update(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
-
     if (Number.isNaN(id)) {
       res.status(400).json({ message: 'El id debe ser un número' });
       return;
     }
-
-    const { nombre } = req.body;
-
-    if (nombre !== undefined && (typeof nombre !== 'string' || nombre.trim() === '')) {
+    const { name } = req.body;
+    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
       res.status(400).json({ message: 'El campo nombre no puede estar vacío' });
       return;
     }
-
     try {
-      const club = await clubService.update(id, { nombre: nombre?.trim() });
+      const club = await clubService.update(id, { name: name?.trim() });
       res.json(club);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -82,12 +74,10 @@ export const clubController = {
 
   async remove(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
-
     if (Number.isNaN(id)) {
       res.status(400).json({ message: 'El id debe ser un número' });
       return;
     }
-
     try {
       await clubService.remove(id);
       res.status(204).send();
