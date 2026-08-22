@@ -46,6 +46,7 @@ model Court {
   clubId   Int     @map("club_id")
   matches  Match[]
 
+  @@unique([clubId, name])
   @@map("courts")
 }
 

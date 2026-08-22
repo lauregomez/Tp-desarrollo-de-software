@@ -51,7 +51,7 @@ export const courtController = {
                 error instanceof Prisma.PrismaClientKnownRequestError &&
                 error.code === 'P2002'
             ) {
-                res.status(409).json({ message: 'Ya existe una cancha con ese nombre' });
+                res.status(409).json({ message: 'El club ya tiene una cancha con ese nombre' });
                 return;
             }
             throw error;
@@ -110,14 +110,17 @@ export const courtController = {
             const court = await courtService.update(id, { name: name?.trim(), capacity, clubId });
             res.json(court);
         } catch (error) {
-            if (
-                error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === 'P2025'
-            ) {
-                res.status(404).json({ message: 'Cancha no encontrada' });
-                return;
-            }
-            throw error;
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+                if (error.code === 'P2025') {
+                    res.status(404).json({ message: 'Cancha no encontrada' });
+            return;
         }
+        if (error.code === 'P2002') {
+            res.status(409).json({ message: 'El club ya tiene una cancha con ese nombre' });
+            return;
+        }
+    }
+    throw error;
+}
     },
 }
