@@ -54,6 +54,8 @@ model Match {
   id         Int         @id @default(autoincrement())
   startsAt   DateTime    @map("starts_at")
   price      Decimal     @db.Decimal(10, 2)
+  category   Category
+  capacity   Int?
   homeClub   Club        @relation("HomeClub", fields: [homeClubId], references: [id])
   homeClubId Int         @map("home_club_id")
   awayClub   Club        @relation("AwayClub", fields: [awayClubId], references: [id])
@@ -67,6 +69,13 @@ model Match {
   @@map("matches")
 }
 
+enum Category {
+  PRIMERA
+  RESERVA
+  CUARTA
+  QUINTA
+}
+
 enum MatchStatus {
   DRAFT
   PUBLISHED
@@ -78,7 +87,7 @@ model Ticket {
   id            Int          @id @default(autoincrement())
   code          String?      @unique
   status        TicketStatus @default(PENDING)
-  pricePaid     Decimal      @db.Decimal(10, 2) @map("price_paid")
+  pricePaid     Decimal      @map("price_paid") @db.Decimal(10, 2)
   reservedUntil DateTime?    @map("reserved_until")
   mpPaymentId   String?      @map("mp_payment_id")
   user          User         @relation(fields: [userId], references: [id])
