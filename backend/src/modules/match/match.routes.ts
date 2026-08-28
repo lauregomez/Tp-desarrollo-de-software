@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import { matchController } from './match.controller';
 import { asyncHandler } from '../../middlewares/asyncHandler';
+import { authenticate } from '../../middlewares/authenticate';
+import { authorize } from '../../middlewares/authorize';
+import { optionalAuthenticate } from '../../middlewares/optionalAuthenticate';
 
 const router = Router();
 
-router.get('/',              asyncHandler(matchController.getAll));
-router.get('/:id',           asyncHandler(matchController.getById));
-router.post('/',             asyncHandler(matchController.create));
-router.put('/:id',           asyncHandler(matchController.update));
-router.patch('/:id/status',  asyncHandler(matchController.changeStatus));
-router.delete('/:id',        asyncHandler(matchController.remove));
+router.get('/',              optionalAuthenticate, asyncHandler(matchController.getAll));
+router.get('/:id',           optionalAuthenticate, asyncHandler(matchController.getById));
+router.post('/',             authenticate, authorize('ADMIN'), asyncHandler(matchController.create));
+router.put('/:id',           authenticate, authorize('ADMIN'), asyncHandler(matchController.update));
+router.patch('/:id/status',  authenticate, authorize('ADMIN'), asyncHandler(matchController.changeStatus));
+router.delete('/:id',        authenticate, authorize('ADMIN'), asyncHandler(matchController.remove));
 
 export default router;

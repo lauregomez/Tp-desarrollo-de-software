@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Prisma, MatchStatus, Category } from '@prisma/client';
+import { AuthRequest } from '../../middlewares/auth.types';
 import {
   matchService,
   toPublicMatch,
@@ -17,8 +18,9 @@ const ALLOWED_TRANSITIONS: Record<MatchStatus, MatchStatus[]> = {
 };
 
 
-function isAdmin(_req: Request): boolean {
-  return false;
+
+function isAdmin(req: AuthRequest): boolean {
+  return req.user?.role === 'ADMIN';
 }
 
 export const matchController = {
