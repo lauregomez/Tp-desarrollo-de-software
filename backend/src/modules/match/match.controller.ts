@@ -5,7 +5,6 @@ import {
   matchService,
   toPublicMatch,
   toAdminMatch,
-  resolveCapacity,
 } from './match.service';
 
 
