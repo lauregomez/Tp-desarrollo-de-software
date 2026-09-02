@@ -1,17 +1,33 @@
 import { prisma } from '../../config/prisma';
-import { MatchStatus } from '@prisma/client';
+import { MatchStatus, TicketStatus } from '@prisma/client';
 import { CreateMatchDto, UpdateMatchDto, MatchFilters } from './match.types';
 
 
 const MATCH_DURATION_MINUTES = 50;
 
 
-const MATCH_INCLUDE = {
-  homeClub: { select: { id: true, name: true } },
-  awayClub: { select: { id: true, name: true } },
-  court: { select: { id: true, name: true, capacity: true } },
-  _count: { select: { tickets: true } },
-};
+function matchInclude() {
+  return {
+    homeClub: { select: { id: true, name: true } },
+    awayClub: { select: { id: true, name: true } },
+    court: { select: { id: true, name: true, capacity: true } },
+    _count: {
+      select: {
+        tickets: {
+          where: {
+            OR: [
+              { status: { in: [TicketStatus.ACTIVE, TicketStatus.USED] } },
+              {
+                status: TicketStatus.PENDING,
+                reservedUntil: { gte: new Date() },
+              },
+            ],
+          },
+        },
+      },
+    },
+  };
+}
 
 export const matchService = {
   async findAll(filters: MatchFilters = {}) {
@@ -29,7 +45,7 @@ export const matchService = {
           },
         }),
       },
-      include: MATCH_INCLUDE,
+      include: matchInclude(),
       orderBy: { startsAt: 'asc' },
     });
   },
@@ -37,14 +53,14 @@ export const matchService = {
   async findById(id: number) {
     return prisma.match.findUnique({
       where: { id },
-      include: MATCH_INCLUDE,
+      include: matchInclude(),
     });
   },
 
   async create(dto: CreateMatchDto) {
     return prisma.match.create({
       data: dto,
-      include: MATCH_INCLUDE,
+      include: matchInclude(),
     });
   },
 
@@ -52,7 +68,7 @@ export const matchService = {
     return prisma.match.update({
       where: { id },
       data: dto,
-      include: MATCH_INCLUDE,
+      include: matchInclude(),
     });
   },
 
