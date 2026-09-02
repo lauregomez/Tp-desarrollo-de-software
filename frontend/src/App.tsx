@@ -1,12 +1,19 @@
+import { Routes, Route } from 'react-router-dom'
+import MainLayout from './components/layout/MainLayout'
+import AuthLayout from './components/layout/AuthLayout'
+import PartidosPage from './pages/PartidosPage'
+import LoginPage from './pages/LoginPage'
+
 export default function App() {
   return (
-    <div className="min-h-screen bg-canvas p-8">
-      <div className="bg-navy text-white p-6 rounded-xl">
-        <h1 className="text-2xl font-bold">Rosarina Futsal</h1>
-      </div>
-      <button className="mt-4 bg-primary text-white px-4 py-2 rounded-lg">
-        Comprar entrada
-      </button>
-    </div>
+    <Routes>
+      <Route element={<MainLayout />}>
+        <Route path="/" element={<PartidosPage />} />
+      </Route>
+
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+      </Route>
+    </Routes>
   )
 }

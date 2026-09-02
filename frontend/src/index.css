@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  --container-app: 1200px;
   --color-navy: #0B2545;
   --color-primary: #1B6FC4;
   --color-brand: #C8102E;
