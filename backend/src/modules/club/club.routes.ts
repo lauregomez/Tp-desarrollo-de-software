@@ -3,13 +3,14 @@ import { clubController } from './club.controller';
 import { asyncHandler } from '../../middlewares/asyncHandler';
 import { authenticate } from '../../middlewares/authenticate';
 import { authorize } from '../../middlewares/authorize';
+import { sanitizeClubInput } from './club.validations';
 
 const router = Router();
 
 router.get('/',        asyncHandler(clubController.getAll));
 router.get('/:id',     asyncHandler(clubController.getById));
-router.post('/',       authenticate, authorize('ADMIN'), asyncHandler(clubController.create));
-router.put('/:id',     authenticate, authorize('ADMIN'), asyncHandler(clubController.update));
+router.post('/',       authenticate, authorize('ADMIN'), sanitizeClubInput, asyncHandler(clubController.create));
+router.put('/:id',     authenticate, authorize('ADMIN'), sanitizeClubInput, asyncHandler(clubController.update));
 router.delete('/:id',  authenticate, authorize('ADMIN'), asyncHandler(clubController.remove));
 
 export default router;

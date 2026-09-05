@@ -23,7 +23,7 @@ export const clubController = {
   },
 
   async create(req: Request, res: Response): Promise<void> {
-    const { name } = req.body;
+    const { name } = req.body.sanitizedClubInput;
     if (typeof name !== 'string' || name.trim() === '') {
       res.status(400).json({ message: 'El campo nombre es obligatorio' });
       return;
@@ -49,7 +49,7 @@ export const clubController = {
       res.status(400).json({ message: 'El id debe ser un número' });
       return;
     }
-    const { name } = req.body;
+    const { name } = req.body.sanitizedClubInput;
     if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
       res.status(400).json({ message: 'El campo nombre no puede estar vacío' });
       return;
