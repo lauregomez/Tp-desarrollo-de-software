@@ -1,7 +1,7 @@
-import MatchCard from '../components/matches/MatchCard'
-import { matchesMock } from '../data/matchesMock'
+import MatchCard from '../matchCard/MatchCard'
+import { matchesMock } from '../../../data/matchesMock'
 
-export default function MatchesPage() {
+export default function MatchList() {
   return (
     <section>
       <h1 className="sr-only">Partidos</h1>

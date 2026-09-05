@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom'
-import type { PublicMatch } from '../../types/match'
-import { CATEGORY_LABEL } from '../../types/match'
-import { formatPrice, formatShortDate, formatTime } from '../../lib/format'
+import { Link } from 'react-router'
+import type { PublicMatch } from '../../../types/match'
+import { CATEGORY_LABEL } from '../../../types/match'
+import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
 
 interface MatchCardProps {
   match: PublicMatch

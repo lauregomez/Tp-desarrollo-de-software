@@ -15,6 +15,13 @@ export class ApiError extends Error {
   }
 }
 
+// Firma de callbacks que usan los archivos .server.ts, siguiendo el patrón
+// onSuccess/onError del apunte de la cátedra.
+export interface Callbacks<T> {
+  onSuccess: (data: T) => void
+  onError: (error: Error) => void
+}
+
 // Se lee de localStorage en cada llamada (y no se cachea en una variable)
 // para que login y logout se reflejen sin reinicializar nada.
 export function getToken(): string | null {

@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive
