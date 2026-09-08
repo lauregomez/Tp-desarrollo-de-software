@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router'
+import { NavLink, useNavigate } from 'react-router'
+import { useAuth } from '../../../context/useAuth'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive
@@ -6,6 +7,16 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     : 'pb-1 text-white/70 hover:text-white'
 
 export default function Header() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    // replace evita que el botón "atrás" vuelva a una pantalla
+    // que ya no tiene sesión detrás.
+    navigate('/', { replace: true })
+  }
+
   return (
     <header className="bg-navy">
       <div className="mx-auto flex max-w-app items-center justify-between px-4 py-3 md:px-6 md:py-4">
@@ -18,17 +29,46 @@ export default function Header() {
           <NavLink to="/" className={linkClass} end>
             Partidos
           </NavLink>
-          <NavLink to="/mis-entradas" className={linkClass}>
-            Mis entradas
-          </NavLink>
+
+          {/* Sólo tiene sentido para alguien logueado. */}
+          {user && (
+            <NavLink to="/mis-entradas" className={linkClass}>
+              Mis entradas
+            </NavLink>
+          )}
+
+          {/* Esconder el link es UX, no seguridad: el backend rechaza
+              igual a quien no sea ADMIN. Evita mostrar una opción
+              que terminaría en un error. */}
+          {user?.role === 'ADMIN' && (
+            <NavLink to="/clubes" className={linkClass}>
+              Clubes
+            </NavLink>
+          )}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-white/20" />
-          <span className="hidden text-sm text-white md:inline">
-            Laureano Gómez
-          </span>
-        </div>
+        {/* El header muestra la sesión real: nombre y logout si hay
+            usuario, botón de ingresar si no. */}
+        {user ? (
+          <div className="flex items-center gap-3">
+            <span className="hidden text-sm text-white md:inline">
+              {user.name} {user.lastName}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-white/70 hover:text-white"
+            >
+              Salir
+            </button>
+          </div>
+        ) : (
+          <NavLink
+            to="/login"
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:brightness-110"
+          >
+            Ingresar
+          </NavLink>
+        )}
       </div>
     </header>
   )

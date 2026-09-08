@@ -4,6 +4,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import MainLayout from './components/layout/mainLayout/MainLayout'
 import AuthLayout from './components/layout/authLayout/AuthLayout'
 import MatchList from './components/matches/matchList/MatchList'
+import ClubList from './components/clubs/clubList/ClubList'
 import Login from './components/auth/login/Login'
 import Protected from './components/auth/protected/Protected'
 import PageNotFound from './components/pageNotFound/PageNotFound'
@@ -31,7 +32,10 @@ export default function App() {
               />
             }
           >
-            {/* Rutas del CRUD de Club — pendientes */}
+            {/* El /* delega el resto del camino al <Routes> interno de
+                ClubList: así el estado y los handlers del CRUD viven a
+                ese nivel y no hay que subirlos a App. */}
+            <Route path="/clubes/*" element={<ClubList />} />
           </Route>
         </Route>
 
