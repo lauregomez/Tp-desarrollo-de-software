@@ -23,7 +23,7 @@ export const clubController = {
   },
 
   async create(req: Request, res: Response): Promise<void> {
-    const { name } = req.body;
+    const { name } = req.body.sanitizedClubInput;
     if (typeof name !== 'string' || name.trim() === '') {
       res.status(400).json({ message: 'El campo nombre es obligatorio' });
       return;
@@ -49,7 +49,7 @@ export const clubController = {
       res.status(400).json({ message: 'El id debe ser un número' });
       return;
     }
-    const { name } = req.body;
+    const { name } = req.body.sanitizedClubInput;
     if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
       res.status(400).json({ message: 'El campo nombre no puede estar vacío' });
       return;
@@ -82,12 +82,18 @@ export const clubController = {
       await clubService.remove(id);
       res.status(204).send();
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
-        res.status(404).json({ message: 'Club no encontrado' });
-        return;
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          res.status(404).json({ message: 'Club no encontrado' });
+          return;
+        }
+        if (error.code === 'P2003') {
+          res.status(409).json({
+            message:
+              'No se puede eliminar el club porque tiene canchas o partidos asociados',
+          });
+          return;
+        }
       }
       throw error;
     }
