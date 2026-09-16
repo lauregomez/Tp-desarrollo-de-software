@@ -10,6 +10,7 @@ import Login from './components/auth/login/Login'
 import Protected from './components/auth/protected/Protected'
 import PageNotFound from './components/pageNotFound/PageNotFound'
 import { useAuth } from './context/useAuth'
+import MatchAdmin from './components/matches/matchAdmin/MatchAdmin'
 
 export default function App() {
   // La sesión se lee acá y baja por props a Protected, que se mantiene
@@ -38,6 +39,7 @@ export default function App() {
                 ClubList: así el estado y los handlers del CRUD viven a
                 ese nivel y no hay que subirlos a App. */}
             <Route path="/clubes/*" element={<ClubList />} />
+            <Route path="/admin/partidos/*" element={<MatchAdmin />} />
           </Route>
         </Route>
 
