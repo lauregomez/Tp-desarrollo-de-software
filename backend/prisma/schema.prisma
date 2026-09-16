@@ -32,6 +32,9 @@ model User {
 model Club {
   id          Int     @id @default(autoincrement())
   name        String  @unique
+  logoUrl     String? @map("logo_url") @db.VarChar(500)
+  description String? @db.Text
+  foundedYear Int?    @map("founded_year")
   courts      Court[]
   homeMatches Match[] @relation("HomeClub")
   awayMatches Match[] @relation("AwayClub")
