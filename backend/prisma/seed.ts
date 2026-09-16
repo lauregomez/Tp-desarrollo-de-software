@@ -77,16 +77,16 @@ async function seedClubs() {
 
 async function seedCourts(clubIds: number[]) {
   const courts = [
-    { name: 'Cancha 1', capacity: 500, clubId: clubIds[0] },
-    { name: 'Cancha 2', capacity: 400, clubId: clubIds[0] },
-    { name: 'Cancha Norte', capacity: 300, clubId: clubIds[1] },
+    { name: 'Cancha 1', address: 'Bv. Oroño 1450, Rosario', capacity: 500, clubId: clubIds[0] },
+    { name: 'Cancha 2', address: 'Bv. Oroño 1450, Rosario', capacity: 400, clubId: clubIds[0] },
+    { name: 'Cancha Norte', address: 'Av. Alberdi 850, Rosario', capacity: 300, clubId: clubIds[1] },
   ];
 
   const created = await Promise.all(
     courts.map((court) =>
       prisma.court.upsert({
         where: { clubId_name: { clubId: court.clubId, name: court.name } },
-        update: { capacity: court.capacity },
+       update: { capacity: court.capacity, address: court.address },
         create: court,
       }),
     ),
