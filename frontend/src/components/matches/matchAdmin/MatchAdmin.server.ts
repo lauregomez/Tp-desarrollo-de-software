@@ -1,6 +1,6 @@
 import { apiFetch } from '../../../lib/api'
 import type { Callbacks } from '../../../lib/api'
-import type { AdminMatch } from '../../../types/match'
+import type { AdminMatch, MatchStatus } from '../../../types/match'
 
 const RESOURCE = '/matches'
 
@@ -21,5 +21,20 @@ export const deleteMatch = (
 ) => {
   apiFetch<void>(`${RESOURCE}/${id}`, { method: 'DELETE' })
     .then(() => onSuccess(id))
+    .catch(onError)
+}
+
+// PATCH /api/matches/:id/status. El backend valida la transición contra
+// su propio ALLOWED_TRANSITIONS y responde 409 si no está permitida.
+export const changeMatchStatus = (
+  id: number,
+  status: MatchStatus,
+  { onSuccess, onError }: Callbacks<AdminMatch>,
+) => {
+  apiFetch<AdminMatch>(`${RESOURCE}/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
+    .then(onSuccess)
     .catch(onError)
 }

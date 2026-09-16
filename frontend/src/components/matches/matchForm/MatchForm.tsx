@@ -19,10 +19,10 @@ import type {
 } from '../../../types/match'
 
 // Output properties: el formulario no guarda nada por su cuenta,
-// avisa hacia arriba y MatchList decide qué hacer con el resultado.
+// avisa hacia arriba y MatchAdmin decide qué hacer con el resultado.
 interface MatchFormProps {
-  onAdd: (match: CreateMatchDto) => void
-  onEdit: (id: number, match: CreateMatchDto) => void
+  onAdd: (match: CreateMatchDto, onFinish: () => void) => void
+  onEdit: (id: number, match: CreateMatchDto, onFinish: () => void) => void
 }
 
 // El input datetime-local espera 'YYYY-MM-DDTHH:mm' en hora local,
@@ -150,13 +150,15 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
       courtId: Number(form.courtId),
     }
 
+    // No reseteamos isSubmitting acá: onAdd/onEdit son asincrónicos y
+    // el botón se liberaría antes de que el servidor responda. Si el
+    // guardado sale bien, MatchAdmin navega y este componente se
+    // desmonta; si falla, hay que volver a habilitar el botón.
     if (isEditing) {
-      onEdit(Number(id), payload)
+      onEdit(Number(id), payload, () => setIsSubmitting(false))
     } else {
-      onAdd(payload)
+      onAdd(payload, () => setIsSubmitting(false))
     }
-
-    setIsSubmitting(false)
   }
 
   const inputClass = 'rounded-lg border border-slate-300 px-3 py-2'

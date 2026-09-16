@@ -68,3 +68,30 @@ export interface CreateMatchDto {
 
 // El PUT acepta cambios parciales: sólo se mandan los campos tocados.
 export type UpdateMatchDto = Partial<CreateMatchDto>
+
+// Etiquetas en español para mostrar el estado, igual que CATEGORY_LABEL.
+// Sin esto la tabla muestra el enum crudo del backend (DRAFT, PUBLISHED).
+export const STATUS_LABEL: Record<MatchStatus, string> = {
+  DRAFT: 'Borrador',
+  PUBLISHED: 'Publicado',
+  FINISHED: 'Finalizado',
+  CANCELLED: 'Cancelado',
+}
+
+// Espejo de ALLOWED_TRANSITIONS del backend (match.controller.ts).
+// Se duplica acá para no ofrecer acciones que el servidor va a rechazar:
+// la regla sigue viviendo en el backend, esto sólo evita el 409.
+export const ALLOWED_TRANSITIONS: Record<MatchStatus, MatchStatus[]> = {
+  DRAFT: ['PUBLISHED', 'CANCELLED'],
+  PUBLISHED: ['FINISHED', 'CANCELLED'],
+  FINISHED: [],
+  CANCELLED: [],
+}
+
+// Texto del botón que dispara cada transición.
+export const TRANSITION_LABEL: Record<MatchStatus, string> = {
+  DRAFT: 'Volver a borrador',
+  PUBLISHED: 'Publicar',
+  FINISHED: 'Finalizar',
+  CANCELLED: 'Cancelar',
+}
