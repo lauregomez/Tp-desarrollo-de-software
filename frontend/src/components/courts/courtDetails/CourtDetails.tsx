@@ -62,6 +62,7 @@ export default function CourtDetails({ clubs }: CourtDetailsProps) {
       <p className="mt-2 text-sm text-muted">
         Club dueño: {club?.name ?? 'Club desconocido'}
       </p>
+      <p className="text-sm text-muted">Dirección: {court.address}</p>
       <p className="text-sm text-muted">Capacidad: {court.capacity}</p>
 
       <div className="mt-6 flex gap-2">
