@@ -4,6 +4,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import MainLayout from './components/layout/mainLayout/MainLayout'
 import AuthLayout from './components/layout/authLayout/AuthLayout'
 import MatchList from './components/matches/matchList/MatchList'
+import MatchDetails from './components/matches/matchDetails/MatchDetails'
 import ClubList from './components/clubs/clubList/ClubList'
 import Login from './components/auth/login/Login'
 import Protected from './components/auth/protected/Protected'
@@ -20,6 +21,7 @@ export default function App() {
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<MatchList />} />
+          <Route path="/partidos/:id" element={<MatchDetails />} />
 
           {/* Sólo un ADMIN entra acá. La sesión se lee de localStorage
               antes del primer render, así que un F5 no expulsa al login. */}
