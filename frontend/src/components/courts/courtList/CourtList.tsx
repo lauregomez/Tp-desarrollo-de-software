@@ -6,7 +6,7 @@ import CourtDetails from '../courtDetails/CourtDetails'
 import CourtForm from '../courtForm/CourtForm'
 import Button from '../../shared/button/Button'
 import { successToast, errorToast } from '../../../shared/notifications'
-import { getCourts, getClubs, createCourt, updateCourt } from './CourtList.server'
+import { getCourts, getClubs, createCourt, updateCourt, deleteCourt } from './CourtList.server'
 import type { Court, CreateCourtDto } from '../../../types/court'
 import type { Club } from '../../../types/club'
 
@@ -71,6 +71,19 @@ export default function CourtList() {
     })
   }
 
+    const handleDeleteCourt = (id: number) => {
+    deleteCourt(id, {
+      // El 204 no devuelve cuerpo: el .server.ts nos pasa el id
+      // que le dimos, y con eso filtramos la lista.
+      onSuccess: (deletedId) => {
+        setCourts((prev) => prev.filter((c) => c.id !== deletedId))
+        successToast('¡Cancha eliminada correctamente!')
+      },
+      // Acá cae el error si la cancha tiene partidos asociados.
+      onError: (error) => errorToast(error.message),
+    })
+  }
+
   // Navegamos llevando la cancha en el state para que el formulario
   // se precargue sin pedirla de nuevo al servidor.
   const handleEditCourt = (court: Court) => {
@@ -91,6 +104,7 @@ export default function CourtList() {
         // devuelve undefined: mostramos un texto en vez de romper la pantalla.
         clubName={club?.name ?? 'Club desconocido'}
         onEdit={handleEditCourt}
+        onDelete={handleDeleteCourt}
       />
     )
   })

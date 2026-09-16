@@ -45,6 +45,18 @@ export const updateCourt = (
     .catch(onError)
 }
 
+// El backend responde 204 sin cuerpo, así que no hay nada que devolver.
+// Le pasamos al onSuccess el id que ya teníamos, para que el componente
+// pueda sacar la cancha de la lista sin volver a pedirla entera.
+export const deleteCourt = (
+  id: number,
+  { onSuccess, onError }: Callbacks<number>,
+) => {
+  apiFetch<void>(`${RESOURCE}/${id}`, { method: 'DELETE' })
+    .then(() => onSuccess(id))
+    .catch(onError)
+}
+
 // Pedimos los clubes desde acá y no importando de ClubList.server:
 // así esta pantalla no depende de un archivo de otra sección que puede cambiar.
 export const getClubs = ({ onSuccess, onError }: Callbacks<Club[]>) => {
