@@ -6,6 +6,7 @@ import AuthLayout from './components/layout/authLayout/AuthLayout'
 import MatchList from './components/matches/matchList/MatchList'
 import MatchDetails from './components/matches/matchDetails/MatchDetails'
 import ClubList from './components/clubs/clubList/ClubList'
+import CourtList from './components/courts/courtList/CourtList'
 import Login from './components/auth/login/Login'
 import Protected from './components/auth/protected/Protected'
 import PageNotFound from './components/pageNotFound/PageNotFound'
@@ -39,7 +40,9 @@ export default function App() {
                 ClubList: así el estado y los handlers del CRUD viven a
                 ese nivel y no hay que subirlos a App. */}
             <Route path="/clubes/*" element={<ClubList />} />
+            <Route path="/canchas/*" element={<CourtList />} />
             <Route path="/admin/partidos/*" element={<MatchAdmin />} />
+
           </Route>
         </Route>
 
