@@ -1,7 +1,7 @@
 import type { Callbacks } from '../../../lib/api'
 import { apiFetch } from '../../../lib/api'
 import type { Club } from '../../../types/club'
-import type { Court } from '../../../types/court'
+import type { Court, CreateCourtDto } from '../../../types/court'
 
 // Ruta base del recurso. apiFetch le antepone VITE_API_URL,
 // así que acá va sólo la parte propia del endpoint.
@@ -19,6 +19,19 @@ export const getCourts = ({ onSuccess, onError }: Callbacks<Court[]>) => {
     .then(onSuccess)
     .catch(onError)
 }
+
+export const createCourt = (
+  court: CreateCourtDto,
+  { onSuccess, onError }: Callbacks<Court>,
+) => {
+  apiFetch<Court>(RESOURCE, {
+    method: 'POST',
+    body: JSON.stringify(court),
+  })
+    .then(onSuccess)
+    .catch(onError)
+}
+
 // Pedimos los clubes desde acá y no importando de ClubList.server:
 // así esta pantalla no depende de un archivo de otra sección que puede cambiar.
 export const getClubs = ({ onSuccess, onError }: Callbacks<Club[]>) => {

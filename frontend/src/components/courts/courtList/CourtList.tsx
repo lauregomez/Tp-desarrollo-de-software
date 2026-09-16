@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route } from 'react-router'
+import { Routes, Route, useNavigate } from 'react-router'
 
 import CourtItem from '../courtItem/CourtItem'
 import CourtDetails from '../courtDetails/CourtDetails'
-import { errorToast } from '../../../shared/notifications'
-import { getCourts, getClubs } from './CourtList.server'
-import type { Court } from '../../../types/court'
+import CourtForm from '../courtForm/CourtForm'
+import Button from '../../shared/button/Button'
+import { successToast, errorToast } from '../../../shared/notifications'
+import { getCourts, getClubs, createCourt } from './CourtList.server'
+import type { Court, CreateCourtDto } from '../../../types/court'
 import type { Club } from '../../../types/club'
 
 export default function CourtList() {
   const [courts, setCourts] = useState<Court[]>([])
   const [clubs, setClubs] = useState<Club[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const navigate = useNavigate()
 
   // Carga inicial. El array de dependencias vacío hace que corra
   // una sola vez, al montar el componente.
@@ -35,6 +38,23 @@ export default function CourtList() {
     })
   }, [])
 
+  const handleAddCourt = (court: CreateCourtDto) => {
+    createCourt(court, {
+      // Agregamos al array local lo que devolvió el servidor (ya con su id)
+      // en vez de volver a pedir la lista entera: una request menos.
+      onSuccess: (created) => {
+        setCourts((prev) => [created, ...prev])
+        successToast(`¡Cancha ${created.name} creada correctamente!`)
+        // Navegamos acá y no en el formulario: recién ahora sabemos
+        // que el guardado salió bien.
+        navigate('/canchas', { replace: true })
+      },
+      // error.message viene del backend (por ej. el 409 si el club
+      // ya tiene una cancha con ese nombre). El usuario sigue en el form.
+      onError: (error) => errorToast(error.message),
+    })
+  }
+
   // Usamos el id del backend como key, nunca el índice del array:
   // si se borra una cancha del medio, los índices se corren y React
   // podría reutilizar el nodo equivocado.
@@ -54,8 +74,12 @@ export default function CourtList() {
 
   return (
     <div>
-      <header className="mb-6">
+      {/* El header está fuera del <Routes>: se ve en todas las sub-rutas. */}
+      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-navy md:text-3xl">Canchas</h1>
+        <Button variant="primary" onClick={() => navigate('/canchas/nuevo')}>
+          Nueva cancha
+        </Button>
       </header>
 
       <Routes>
@@ -74,7 +98,15 @@ export default function CourtList() {
             )
           }
         />
-                {/* El path no empieza con "/" porque es relativo a /canchas.
+
+        {/* "nuevo" es un path fijo: React Router lo prioriza sobre ":id",
+            así /canchas/nuevo no se interpreta como una cancha con id "nuevo". */}
+        <Route
+          path="nuevo"
+          element={<CourtForm clubs={clubs} onAdd={handleAddCourt} />}
+        />
+
+        {/* El path no empieza con "/" porque es relativo a /canchas.
             Le pasamos los clubes que ya cargamos para resolver el nombre del dueño. */}
         <Route path=":id" element={<CourtDetails clubs={clubs} />} />
       </Routes>
