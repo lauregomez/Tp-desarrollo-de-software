@@ -37,9 +37,9 @@ async function seedUsers() {
   const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
 
   const users = [
-    { name: 'Carlos',  lastName: 'Méndez',  email: 'admin@arf.com',    roleId: 1 },
+    { name: 'Carlos', lastName: 'Méndez', email: 'admin@arf.com', roleId: 1 },
     { name: 'Rodrigo', lastName: 'Sánchez', email: 'operador@arf.com', roleId: 2 },
-    { name: 'Juan',    lastName: 'García',  email: 'usuario@arf.com',  roleId: 3 },
+    { name: 'Juan', lastName: 'García', email: 'usuario@arf.com', roleId: 3 },
   ];
 
   for (const user of users) {
@@ -86,7 +86,7 @@ async function seedCourts(clubIds: number[]) {
     courts.map((court) =>
       prisma.court.upsert({
         where: { clubId_name: { clubId: court.clubId, name: court.name } },
-       update: { capacity: court.capacity, address: court.address },
+        update: { capacity: court.capacity, address: court.address },
         create: court,
       }),
     ),
