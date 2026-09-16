@@ -45,6 +45,12 @@ export default function Header() {
               Clubes
             </NavLink>
           )}
+
+          {user?.role === 'ADMIN' && (
+            <NavLink to="/canchas" className={linkClass}>
+              Canchas
+            </NavLink>
+          )}
         </nav>
 
         {/* El header muestra la sesión real: nombre y logout si hay
