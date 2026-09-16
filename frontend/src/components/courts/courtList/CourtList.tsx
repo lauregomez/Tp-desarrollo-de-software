@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Routes, Route } from 'react-router'
 
 import CourtItem from '../courtItem/CourtItem'
+import CourtDetails from '../courtDetails/CourtDetails'
 import { errorToast } from '../../../shared/notifications'
 import { getCourts, getClubs } from './CourtList.server'
 import type { Court } from '../../../types/court'
@@ -73,6 +74,9 @@ export default function CourtList() {
             )
           }
         />
+                {/* El path no empieza con "/" porque es relativo a /canchas.
+            Le pasamos los clubes que ya cargamos para resolver el nombre del dueño. */}
+        <Route path=":id" element={<CourtDetails clubs={clubs} />} />
       </Routes>
     </div>
   )
