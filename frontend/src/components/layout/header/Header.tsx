@@ -1,21 +1,21 @@
-import { NavLink, useNavigate } from 'react-router'
-import { useAuth } from '../../../context/useAuth'
+import { NavLink, useNavigate } from "react-router";
+import { useAuth } from "../../../context/useAuth";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive
-    ? 'border-b-2 border-white pb-1 text-white'
-    : 'pb-1 text-white/70 hover:text-white'
+    ? "border-b-2 border-white pb-1 text-white"
+    : "pb-1 text-white/70 hover:text-white";
 
 export default function Header() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout()
+    logout();
     // replace evita que el botón "atrás" vuelva a una pantalla
     // que ya no tiene sesión detrás.
-    navigate('/', { replace: true })
-  }
+    navigate("/", { replace: true });
+  };
 
   return (
     <header className="bg-navy">
@@ -40,16 +40,18 @@ export default function Header() {
           {/* Esconder el link es UX, no seguridad: el backend rechaza
               igual a quien no sea ADMIN. Evita mostrar una opción
               que terminaría en un error. */}
-          {user?.role === 'ADMIN' && (
-            <NavLink to="/clubes" className={linkClass}>
-              Clubes
-            </NavLink>
-          )}
-
-          {user?.role === 'ADMIN' && (
-            <NavLink to="/canchas" className={linkClass}>
-              Canchas
-            </NavLink>
+            {user?.role === "ADMIN" && (
+            <>
+              <NavLink to="/clubes" className={linkClass}>
+                Clubes
+              </NavLink>
+              <NavLink to="/canchas" className={linkClass}>
+                Canchas
+              </NavLink>
+              <NavLink to="/admin/partidos" className={linkClass}>
+                Gestión
+              </NavLink>
+            </>
           )}
         </nav>
 
@@ -77,5 +79,5 @@ export default function Header() {
         )}
       </div>
     </header>
-  )
+  );
 }

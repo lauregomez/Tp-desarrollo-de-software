@@ -2,3 +2,7 @@ node_modules/
 dist/
 backend/.env
 frontend/.env
+# Variables de entorno
+.env
+.env.*
+!.env.example
