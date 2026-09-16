@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate, useParams } from 'react-router'
 
 import Button from '../../shared/button/Button'
+import { errorToast } from '../../../shared/notifications'
 import { initialCourtData, initialCourtErrors } from './CourtForm.data'
-import type { CreateCourtDto } from '../../../types/court'
+import { getCourt } from './CourtForm.server'
+import type { Court, CreateCourtDto } from '../../../types/court'
 import type { Club } from '../../../types/club'
 
 // Input: los clubes para armar el desplegable llegan de CourtList, que ya los tiene.
@@ -13,12 +15,33 @@ import type { Club } from '../../../types/club'
 interface CourtFormProps {
   clubs: Club[]
   onAdd: (court: CreateCourtDto) => void
+  onEdit: (id: number, court: CreateCourtDto) => void
 }
 
-export default function CourtForm({ clubs, onAdd }: CourtFormProps) {
+// El estado del form guarda todo como texto (así trabajan los inputs),
+// pero la cancha de la API trae números: convertimos al precargar.
+const toFormData = (court: Court) => ({
+  name: court.name,
+  capacity: String(court.capacity),
+  clubId: String(court.clubId),
+})
+
+export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
   const navigate = useNavigate()
 
-  const [form, setForm] = useState(initialCourtData)
+  // useParams devuelve los segmentos dinámicos de la URL, siempre string.
+  // Si hay :id estamos editando; si no, es un alta.
+  const { id } = useParams<{ id: string }>()
+  const isEditing = !!id
+
+    // La cancha que CourtList mandó en navigate(..., { state: court }).
+  // Puede no estar si se abre el link en otra pestaña o desde un marcador.
+  const { state } = useLocation()
+  const courtFromState = state as Court | null
+
+  const [form, setForm] = useState(
+    courtFromState ? toFormData(courtFromState) : initialCourtData,
+  )
   const [errors, setErrors] = useState(initialCourtErrors)
 
   // Refs a los nodos reales: sólo para hacer focus() en el primer campo
@@ -26,6 +49,20 @@ export default function CourtForm({ clubs, onAdd }: CourtFormProps) {
   const nameRef = useRef<HTMLInputElement>(null)
   const capacityRef = useRef<HTMLInputElement>(null)
   const clubRef = useRef<HTMLSelectElement>(null)
+
+    // Fallback: si estamos editando y no llegó el state (link directo),
+  // pedimos la cancha por su id para precargar el formulario.
+  useEffect(() => {
+    if (!isEditing || courtFromState) return
+
+    getCourt(id, {
+      onSuccess: (court) => setForm(toFormData(court)),
+      onError: (error) => {
+        errorToast(error.message)
+        navigate('/canchas', { replace: true })
+      },
+    })
+  }, [id, isEditing, courtFromState, navigate])
 
   // Handler genérico con clave computada: sirve para los inputs y el select.
   // Limpia el error del campo apenas el usuario empieza a corregir.
@@ -62,11 +99,17 @@ export default function CourtForm({ clubs, onAdd }: CourtFormProps) {
 
     // Los inputs devuelven texto y el backend exige enteros:
     // convertimos acá, una sola vez, justo antes de enviar.
-    onAdd({
+    const payload: CreateCourtDto = {
       name: form.name.trim(),
       capacity,
       clubId: Number(form.clubId),
-    })
+    }
+
+    if (isEditing) {
+      onEdit(Number(id), payload)
+    } else {
+      onAdd(payload)
+    }
   }
 
   const inputClass = (hasError: boolean) =>
@@ -80,7 +123,9 @@ export default function CourtForm({ clubs, onAdd }: CourtFormProps) {
       noValidate
       className="max-w-md rounded-xl border border-slate-200 bg-white p-6"
     >
-      <h2 className="text-xl font-bold text-navy">Nueva cancha</h2>
+      <h2 className="text-xl font-bold text-navy">
+        {isEditing ? 'Editar cancha' : 'Nueva cancha'}
+      </h2>
 
       <div className="mt-6 flex flex-col gap-1">
         <label htmlFor="name" className="text-sm font-medium">
@@ -154,7 +199,7 @@ export default function CourtForm({ clubs, onAdd }: CourtFormProps) {
           Cancelar
         </Button>
         <Button type="submit" variant="primary">
-          Crear cancha
+          {isEditing ? 'Guardar cambios' : 'Crear cancha'}
         </Button>
       </div>
     </form>

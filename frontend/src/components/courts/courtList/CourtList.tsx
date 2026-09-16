@@ -6,7 +6,7 @@ import CourtDetails from '../courtDetails/CourtDetails'
 import CourtForm from '../courtForm/CourtForm'
 import Button from '../../shared/button/Button'
 import { successToast, errorToast } from '../../../shared/notifications'
-import { getCourts, getClubs, createCourt } from './CourtList.server'
+import { getCourts, getClubs, createCourt, updateCourt } from './CourtList.server'
 import type { Court, CreateCourtDto } from '../../../types/court'
 import type { Club } from '../../../types/club'
 
@@ -55,6 +55,28 @@ export default function CourtList() {
     })
   }
 
+    const handleUpdateCourt = (id: number, court: CreateCourtDto) => {
+    updateCourt(id, court, {
+      // Reemplazamos sólo la cancha editada en el array local,
+      // en vez de volver a pedir la lista entera.
+      onSuccess: (updated) => {
+        setCourts((prev) =>
+          prev.map((c) => (c.id === updated.id ? updated : c)),
+        )
+        successToast(`¡Cancha ${updated.name} actualizada correctamente!`)
+        navigate('/canchas', { replace: true })
+      },
+      // Por ej. el 409 si el club ya tiene otra cancha con ese nombre.
+      onError: (error) => errorToast(error.message),
+    })
+  }
+
+  // Navegamos llevando la cancha en el state para que el formulario
+  // se precargue sin pedirla de nuevo al servidor.
+  const handleEditCourt = (court: Court) => {
+    navigate(`/canchas/editar/${court.id}`, { state: court })
+  }
+
   // Usamos el id del backend como key, nunca el índice del array:
   // si se borra una cancha del medio, los índices se corren y React
   // podría reutilizar el nodo equivocado.
@@ -68,6 +90,7 @@ export default function CourtList() {
         // Si los clubes todavía no llegaron (o falló el pedido), find
         // devuelve undefined: mostramos un texto en vez de romper la pantalla.
         clubName={club?.name ?? 'Club desconocido'}
+        onEdit={handleEditCourt}
       />
     )
   })
@@ -82,7 +105,7 @@ export default function CourtList() {
         </Button>
       </header>
 
-      <Routes>
+            <Routes>
         {/* <Route index> es la ruta por defecto del grupo: /canchas exacto */}
         <Route
           index
@@ -103,7 +126,18 @@ export default function CourtList() {
             así /canchas/nuevo no se interpreta como una cancha con id "nuevo". */}
         <Route
           path="nuevo"
-          element={<CourtForm clubs={clubs} onAdd={handleAddCourt} />}
+          element={
+            <CourtForm clubs={clubs} onAdd={handleAddCourt} onEdit={handleUpdateCourt} />
+          }
+        />
+
+        {/* "nuevo" y "editar/:id" renderizan el MISMO componente:
+            el formulario decide solo en qué modo está según haya :id. */}
+        <Route
+          path="editar/:id"
+          element={
+            <CourtForm clubs={clubs} onAdd={handleAddCourt} onEdit={handleUpdateCourt} />
+          }
         />
 
         {/* El path no empieza con "/" porque es relativo a /canchas.

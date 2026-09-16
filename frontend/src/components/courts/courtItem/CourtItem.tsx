@@ -2,12 +2,15 @@ import { useNavigate } from 'react-router'
 import Button from '../../shared/button/Button'
 import type { Court } from '../../../types/court'
 
+ // onEdit es un callback del padre: la tarjeta sólo avisa qué quiso hacer
+ // el usuario y CourtList decide qué significa.
 interface CourtItemProps {
   court: Court
   clubName: string
+  onEdit: (court: Court) => void
 }
 
-export default function CourtItem({ court, clubName }: CourtItemProps) {
+export default function CourtItem({ court, clubName, onEdit }: CourtItemProps) {
     const navigate = useNavigate()
   return (
     <article className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4">
@@ -23,6 +26,11 @@ export default function CourtItem({ court, clubName }: CourtItemProps) {
            onClick={() => navigate(`/canchas/${court.id}`, { state: court })}
          >
            Ver detalle
+         </Button>
+         {/* Mandamos la cancha entera hacia arriba: CourtList la pasa
+             en el state de la navegación para precargar el formulario. */}
+         <Button variant="primary" size="sm" onClick={() => onEdit(court)}>
+           Editar
          </Button>
        </div>
     </article>
