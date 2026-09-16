@@ -80,13 +80,21 @@ export const courtController = {
             await courtService.remove(id);
             res.status(204).send();
         } catch (error) {
-            if (
-                error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === 'P2025'
-            ) {
-                res.status(404).json({ message: 'Cancha no encontrada' });
-                return;
-            }
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+             if (error.code === 'P2025') {
+                 res.status(404).json({ message: 'Cancha no encontrada' });
+                 return;
+             }
+             // La FK de matches impide borrar una cancha con partidos.
+             // Sin este caso lo atraparía el handler global con un mensaje
+             // pensado para referencias inexistentes, que confunde al usuario.
+             if (error.code === 'P2003') {
+                 res.status(409).json({
+                     message: 'No se puede eliminar la cancha porque tiene partidos asociados',
+                 });
+                 return;
+             }
+         }
             throw error;
         }
     },
