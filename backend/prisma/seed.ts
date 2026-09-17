@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient, Category, MatchStatus } from '@prisma/client';
+import { PrismaClient, Category, MatchStatus, TicketStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -42,15 +42,19 @@ async function seedUsers() {
     { name: 'Juan', lastName: 'García', email: 'usuario@arf.com', roleId: 3 },
   ];
 
+  const created = [];
+
   for (const user of users) {
-    await prisma.user.upsert({
+    const saved = await prisma.user.upsert({
       where: { email: user.email },
       update: { name: user.name, lastName: user.lastName, roleId: user.roleId },
       create: { ...user, passwordHash },
     });
+    created.push(saved);
   }
 
   console.log(`✓ Usuarios: ${users.length} (password: ${DEFAULT_PASSWORD})`);
+  return created;
 }
 
 async function seedClubs() {
@@ -153,13 +157,64 @@ async function seedMatches(clubIds: number[], courtIds: number[]) {
   }
 
   console.log(`✓ Partidos: ${matches.length}`);
+  return matches.map((match) => match.id);
+}
+
+async function seedTickets(userId: number, matchIds: number[]) {
+  const tickets = [
+    {
+      id: 1,
+      // Reserva sin pagar: vence en 15 minutos contados desde que corre el seed.
+      status: TicketStatus.PENDING,
+      code: null, // el QR se genera recién al confirmarse el pago
+      pricePaid: '2500.00',
+      reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
+      mpPaymentId: null,
+      userId,
+      matchId: matchIds[0],
+    },
+    {
+      id: 2,
+      // Entrada pagada y lista para usar: tiene code y ya no tiene hold.
+      status: TicketStatus.ACTIVE,
+      // Código fijo (y no randomUUID) para que el seed sea idempotente:
+      // correrlo dos veces no genera un code distinto ni rompe el unique.
+      code: 'seed-ticket-active-0001',
+      pricePaid: '2500.00',
+      reservedUntil: null,
+      mpPaymentId: 'seed-payment-0001',
+      userId,
+      matchId: matchIds[0],
+    },
+    {
+      id: 3,
+      // Entrada ya usada, asociada al partido finalizado del seed.
+      status: TicketStatus.USED,
+      code: 'seed-ticket-used-0001',
+      pricePaid: '2000.00',
+      reservedUntil: null,
+      mpPaymentId: 'seed-payment-0002',
+      userId,
+      matchId: matchIds[3],
+    },
+  ];
+
+  for (const ticket of tickets) {
+    await prisma.ticket.upsert({
+      where: { id: ticket.id },
+      update: ticket,
+      create: ticket,
+    });
+  }
+
+  console.log(`✓ Entradas: ${tickets.length}`);
 }
 
 async function main() {
   console.log('Iniciando seed...\n');
 
   await seedRoles();
-  await seedUsers();
+  const users = await seedUsers();
 
   const clubs = await seedClubs();
   const clubIds = clubs.map((c) => c.id);
@@ -167,7 +222,13 @@ async function main() {
   const courts = await seedCourts(clubIds);
   const courtIds = courts.map((c) => c.id);
 
-  await seedMatches(clubIds, courtIds);
+  const matchIds = await seedMatches(clubIds, courtIds);
+
+   // Las entradas van al usuario común: admin y operador no compran.
+   const buyer = users.find((u) => u.email === 'usuario@arf.com');
+   if (buyer) {
+     await seedTickets(buyer.id, matchIds);
+   }
 
   console.log('\nSeed completado.');
 }
