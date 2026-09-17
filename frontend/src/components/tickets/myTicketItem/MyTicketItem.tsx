@@ -41,7 +41,9 @@ export default function MyTicketItem({ ticket }: MyTicketItemProps) {
         {formatShortDate(match.startsAt)} · {formatTime(match.startsAt)} hs
       </p>
       <p className="text-muted">Cancha: {match.court.name}</p>
-      <p className="text-muted">Pagaste: {formatPrice(ticket.pricePaid)}</p>
+      {ticket.pricePaid && (
+       <p className="text-muted">Pagaste: {formatPrice(ticket.pricePaid)}</p>
+     )}
 
       {/* Sólo las reservas sin pagar tienen vencimiento: mostrarlo en una
           entrada ACTIVE o USED confundiría al usuario. */}

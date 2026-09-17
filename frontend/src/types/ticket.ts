@@ -30,7 +30,10 @@ export interface Ticket {
   code: string | null
   status: TicketStatus
   // Decimal de Prisma: viaja como string para no perder precisión.
-  pricePaid: string
+   // Opcional porque el backend usa dos proyecciones: el dueño recibe el
+   // precio, y un ADMIN u OPERATOR que mira una entrada ajena no (los
+   // datos de pago no le competen). Ver toOperatorTicket en el backend.
+   pricePaid?: string
   // Vencimiento de la reserva de 15 minutos. Sólo aplica a PENDING.
   reservedUntil: string | null
   createdAt: string

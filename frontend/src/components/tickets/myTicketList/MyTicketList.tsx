@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route } from 'react-router'
-
+import MyTicketDetails from '../myTicketDetails/MyTicketDetails'
 import MyTicketItem from '../myTicketItem/MyTicketItem'
 import { errorToast } from '../../../shared/notifications'
 import { getMyTickets } from './MyTicketList.server'
@@ -53,6 +53,8 @@ export default function MyTicketList() {
             )
           }
         />
+        {/* El path no empieza con "/" porque es relativo a /mis-entradas. */}
+        <Route path=":id" element={<MyTicketDetails />} />
       </Routes>
     </div>
   )
