@@ -3,6 +3,7 @@
 export interface Court {
   id: number
   name: string
+  address: string
   capacity: number
   clubId: number // Se refiere al club al que pertenece la cancha.
 }
@@ -11,6 +12,7 @@ export interface Court {
 // Sin id: todavía no existe el registro.
 export type CreateCourtDto = {
   name: string
+  address: string
   capacity: number
   clubId: number
 }

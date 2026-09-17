@@ -4,6 +4,7 @@
 // <select> siempre trabajan con texto: se convierten a número al enviar.
 export const initialCourtData = {
   name: '',
+  address: '',
   capacity: '',
   clubId: '',
 }
@@ -12,6 +13,7 @@ export const initialCourtData = {
 // y se muestra el mensaje de error correspondiente.
 export const initialCourtErrors = {
   name: false,
+  address: false,
   capacity: false,
   clubId: false,
 }

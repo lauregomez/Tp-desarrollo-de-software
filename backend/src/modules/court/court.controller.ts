@@ -26,12 +26,17 @@ export const courtController = {
     },
 
     async create(req: Request, res: Response): Promise<void> {
-        const { name, capacity, clubId } = req.body;
+        const { name, address, capacity, clubId } = req.body;
 
         if (typeof name !== 'string' || name.trim() === '') {
             res.status(400).json({ message: 'El campo nombre es obligatorio' });
             return;
         }
+
+         if (typeof address !== 'string' || address.trim() === '') {
+           res.status(400).json({ message: 'El campo dirección es obligatorio' });
+           return;
+       }
                 
         if (!Number.isInteger(capacity) || capacity <= 0) {
             res.status(400).json({ message: 'La capacidad debe ser un número entero positivo' });
@@ -44,7 +49,12 @@ export const courtController = {
         }
 
         try {
-            const court = await courtService.create({ name: name.trim(), capacity, clubId });
+            const court = await courtService.create({
+               name: name.trim(),
+               address: address.trim(),
+               capacity,
+               clubId,
+           });
             res.status(201).json(court);
         } catch (error) {
             if (
@@ -70,13 +80,21 @@ export const courtController = {
             await courtService.remove(id);
             res.status(204).send();
         } catch (error) {
-            if (
-                error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === 'P2025'
-            ) {
-                res.status(404).json({ message: 'Cancha no encontrada' });
-                return;
-            }
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+             if (error.code === 'P2025') {
+                 res.status(404).json({ message: 'Cancha no encontrada' });
+                 return;
+             }
+             // La FK de matches impide borrar una cancha con partidos.
+             // Sin este caso lo atraparía el handler global con un mensaje
+             // pensado para referencias inexistentes, que confunde al usuario.
+             if (error.code === 'P2003') {
+                 res.status(409).json({
+                     message: 'No se puede eliminar la cancha porque tiene partidos asociados',
+                 });
+                 return;
+             }
+         }
             throw error;
         }
     },
@@ -89,12 +107,17 @@ export const courtController = {
             return;
         }
 
-        const { name, capacity, clubId } = req.body;
+       const { name, address, capacity, clubId } = req.body;
 
         if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
             res.status(400).json({ message: 'El campo nombre no puede estar vacío' });
             return;
         }
+        
+        if (address !== undefined && (typeof address !== 'string' || address.trim() === '')) {
+           res.status(400).json({ message: 'El campo dirección no puede estar vacío' });
+           return;
+       }
 
                 if (capacity !== undefined && (!Number.isInteger(capacity) || capacity <= 0)) {
             res.status(400).json({ message: 'La capacidad debe ser un número entero positivo' });
@@ -107,7 +130,12 @@ export const courtController = {
         }
 
         try {
-            const court = await courtService.update(id, { name: name?.trim(), capacity, clubId });
+            const court = await courtService.update(id, {
+               name: name?.trim(),
+               address: address?.trim(),
+               capacity,
+               clubId,
+           });
             res.json(court);
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError) {

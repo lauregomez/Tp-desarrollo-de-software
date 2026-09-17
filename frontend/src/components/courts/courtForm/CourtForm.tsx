@@ -22,6 +22,7 @@ interface CourtFormProps {
 // pero la cancha de la API trae números: convertimos al precargar.
 const toFormData = (court: Court) => ({
   name: court.name,
+  address: court.address,
   capacity: String(court.capacity),
   clubId: String(court.clubId),
 })
@@ -47,6 +48,7 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
   // Refs a los nodos reales: sólo para hacer focus() en el primer campo
   // con error. Hacer foco es una acción sobre el DOM que no se expresa con props.
   const nameRef = useRef<HTMLInputElement>(null)
+  const addressRef = useRef<HTMLInputElement>(null)
   const capacityRef = useRef<HTMLInputElement>(null)
   const clubRef = useRef<HTMLSelectElement>(null)
 
@@ -84,14 +86,16 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
     // Mismas reglas que valida el backend, para avisar antes de hacer la request.
     const newErrors = {
       name: form.name.trim() === '',
+      address: form.address.trim() === '',
       capacity: !Number.isInteger(capacity) || capacity <= 0,
       clubId: form.clubId === '',
     }
 
-    if (newErrors.name || newErrors.capacity || newErrors.clubId) {
+    if (newErrors.name || newErrors.address || newErrors.capacity || newErrors.clubId) {
       setErrors(newErrors)
       // Foco en el primer campo con error, en el orden en que aparecen.
       if (newErrors.name) nameRef.current?.focus()
+      else if (newErrors.address) addressRef.current?.focus()
       else if (newErrors.capacity) capacityRef.current?.focus()
       else clubRef.current?.focus()
       return
@@ -101,6 +105,7 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
     // convertimos acá, una sola vez, justo antes de enviar.
     const payload: CreateCourtDto = {
       name: form.name.trim(),
+      address: form.address.trim(),
       capacity,
       clubId: Number(form.clubId),
     }
@@ -147,6 +152,26 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
         )}
       </div>
 
+      <div className="mt-4 flex flex-col gap-1">
+        <label htmlFor="address" className="text-sm font-medium">
+          Dirección
+        </label>
+        <input
+          ref={addressRef}
+          id="address"
+          type="text"
+          value={form.address}
+          onChange={(event) => handleChange(event, 'address')}
+          placeholder="Bv. Oroño 1450, Rosario"
+          className={inputClass(errors.address)}
+        />
+        {errors.address && (
+          <p role="alert" className="text-sm text-brand">
+            La dirección de la cancha es obligatoria.
+          </p>
+        )}
+      </div>
+      
       <div className="mt-4 flex flex-col gap-1">
         <label htmlFor="capacity" className="text-sm font-medium">
           Capacidad
