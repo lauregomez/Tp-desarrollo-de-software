@@ -4,17 +4,23 @@ import MyTicketDetails from '../myTicketDetails/MyTicketDetails'
 import MyTicketItem from '../myTicketItem/MyTicketItem'
 import { errorToast } from '../../../shared/notifications'
 import { getMyTickets } from './MyTicketList.server'
-import type { Ticket } from '../../../types/ticket'
+import { TICKET_STATUS_LABEL } from '../../../types/ticket'
+import type { Ticket, TicketStatus } from '../../../types/ticket'
 
 export default function MyTicketList() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  // '' representa "todas": es el valor de la opción por defecto del select.
+ const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('')
 
   // Carga inicial. El array de dependencias vacío hace que corra
   // una sola vez, al montar el componente.
   useEffect(() => {
-    // Sin filtro de estado por ahora: traemos todas las entradas.
-    getMyTickets('', {
+    // Cada cambio de filtro vuelve a pedir la lista al backend, que ya
+   // acepta ?status=. Por eso statusFilter está en las dependencias.
+   setIsLoading(true)
+
+   getMyTickets(statusFilter, {
       onSuccess: (data) => {
         setTickets(data)
         setIsLoading(false)
@@ -24,7 +30,7 @@ export default function MyTicketList() {
         setIsLoading(false)
       },
     })
-  }, [])
+  }, [statusFilter])
 
   // Usamos el id del backend como key, nunca el índice del array.
   const ticketsMapped = tickets.map((ticket) => (
@@ -33,8 +39,31 @@ export default function MyTicketList() {
 
   return (
     <div>
-      <header className="mb-6">
+      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-navy md:text-3xl">Mis entradas</h1>
+
+        <div className="flex items-center gap-2">
+         <label htmlFor="status" className="text-sm text-muted">
+           Estado
+         </label>
+         <select
+           id="status"
+           value={statusFilter}
+           onChange={(event) =>
+             setStatusFilter(event.target.value as TicketStatus | '')
+           }
+           className="rounded-lg border border-slate-300 px-3 py-2"
+         >
+           <option value="">Todas</option>
+           {/* Generamos las opciones desde TICKET_STATUS_LABEL: si el
+               backend agrega un estado, aparece solo y con su texto. */}
+           {Object.entries(TICKET_STATUS_LABEL).map(([value, label]) => (
+             <option key={value} value={value}>
+               {label}
+             </option>
+           ))}
+         </select>
+       </div>
       </header>
 
       <Routes>
