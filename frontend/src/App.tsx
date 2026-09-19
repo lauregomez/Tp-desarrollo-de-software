@@ -7,6 +7,7 @@ import MatchList from './components/matches/matchList/MatchList'
 import MatchDetails from './components/matches/matchDetails/MatchDetails'
 import ClubList from './components/clubs/clubList/ClubList'
 import CourtList from './components/courts/courtList/CourtList'
+import MyTicketList from './components/tickets/myTicketList/MyTicketList'
 import Login from './components/auth/login/Login'
 import Protected from './components/auth/protected/Protected'
 import PageNotFound from './components/pageNotFound/PageNotFound'
@@ -43,6 +44,12 @@ export default function App() {
             <Route path="/canchas/*" element={<CourtList />} />
             <Route path="/admin/partidos/*" element={<MatchAdmin />} />
 
+          </Route>
+                    {/* Cualquier usuario logueado ve sus propias entradas: este
+              Protected no pasa roles, así que sólo exige sesión. El
+              backend igual devuelve únicamente las del token. */}
+          <Route element={<Protected isSignedIn={user !== null} />}>
+            <Route path="/mis-entradas/*" element={<MyTicketList />} />
           </Route>
         </Route>
 
