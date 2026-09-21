@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 
+import {
+  MAX_ADDRESS_LENGTH,
+  MAX_CAPACITY,
+  MAX_NAME_LENGTH,
+  MIN_ADDRESS_LENGTH,
+} from './CourtForm.const'
 import Button from '../../shared/button/Button'
 import { errorToast } from '../../../shared/notifications'
 import { initialCourtData, initialCourtErrors } from './CourtForm.data'
@@ -81,15 +87,20 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
     // Sin esto el navegador recarga la página y se pierde el estado.
     event.preventDefault()
 
-    const capacity = Number(form.capacity)
+    const address = form.address.trim()
+   // Sólo dígitos: Number() convierte "12e5" en 1200000, que es un entero
+   // válido. Con el regex, la notación científica y los decimales no pasan.
+   const isDigitsOnly = /^\d+$/.test(form.capacity)
+   const capacity = Number(form.capacity)
 
-    // Mismas reglas que valida el backend, para avisar antes de hacer la request.
-    const newErrors = {
-      name: form.name.trim() === '',
-      address: form.address.trim() === '',
-      capacity: !Number.isInteger(capacity) || capacity <= 0,
-      clubId: form.clubId === '',
-    }
+   // Mismas reglas que valida el backend, para avisar antes de hacer la request.
+   const newErrors = {
+     name: form.name.trim() === '',
+     address:
+       address.length < MIN_ADDRESS_LENGTH || address.length > MAX_ADDRESS_LENGTH,
+     capacity: !isDigitsOnly || capacity <= 0 || capacity > MAX_CAPACITY,
+     clubId: form.clubId === '',
+   }
 
     if (newErrors.name || newErrors.address || newErrors.capacity || newErrors.clubId) {
       setErrors(newErrors)
@@ -143,6 +154,7 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
           value={form.name}
           onChange={(event) => handleChange(event, 'name')}
           placeholder="Cancha Principal"
+          maxLength={MAX_NAME_LENGTH}
           className={inputClass(errors.name)}
         />
         {errors.name && (
@@ -163,11 +175,13 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
           value={form.address}
           onChange={(event) => handleChange(event, 'address')}
           placeholder="Bv. Oroño 1450, Rosario"
+          maxLength={MAX_ADDRESS_LENGTH}
           className={inputClass(errors.address)}
         />
         {errors.address && (
           <p role="alert" className="text-sm text-brand">
-            La dirección de la cancha es obligatoria.
+            La dirección debe tener entre {MIN_ADDRESS_LENGTH} y{' '}
+           {MAX_ADDRESS_LENGTH} caracteres.
           </p>
         )}
       </div>
@@ -176,11 +190,15 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
         <label htmlFor="capacity" className="text-sm font-medium">
           Capacidad
         </label>
+        {/* type="text" + inputMode="numeric" y no type="number": el number
+           cambia el valor con la rueda del mouse al scrollear y acepta
+           notación científica ("12e5"). Mismo criterio que ClubForm.
+           inputMode igual muestra el teclado numérico en el celular. */}
         <input
           ref={capacityRef}
           id="capacity"
-          type="number"
-          min={1}
+          type="text"
+         inputMode="numeric"
           value={form.capacity}
           onChange={(event) => handleChange(event, 'capacity')}
           placeholder="500"
@@ -188,7 +206,7 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
         />
         {errors.capacity && (
           <p role="alert" className="text-sm text-brand">
-            Ingresá un número entero mayor a 0.
+            Ingresá un número entero entre 1 y {MAX_CAPACITY}.
           </p>
         )}
       </div>
