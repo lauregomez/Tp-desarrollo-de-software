@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router'
-
+import PageNotFound from '../../pageNotFound/PageNotFound'
 import CourtItem from '../courtItem/CourtItem'
 import CourtDetails from '../courtDetails/CourtDetails'
 import CourtForm from '../courtForm/CourtForm'
@@ -157,6 +157,12 @@ export default function CourtList() {
         {/* El path no empieza con "/" porque es relativo a /canchas.
             Le pasamos los clubes que ya cargamos para resolver el nombre del dueño. */}
         <Route path=":id" element={<CourtDetails clubs={clubs} />} />
+
+        {/* Captura sub-rutas inválidas de /canchas (por ej. /canchas/a/b).
+        Sin esto se vería el header con el cuerpo vacío, porque el 404 de
+         App.tsx no llega: /canchas/* ya delegó el resto a este Routes. */}
+        <Route path="*" element={<PageNotFound />} />
+
       </Routes>
     </div>
   )
