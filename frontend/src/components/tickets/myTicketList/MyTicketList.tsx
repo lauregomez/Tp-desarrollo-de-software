@@ -6,21 +6,22 @@ import { errorToast } from '../../../shared/notifications'
 import { getMyTickets } from './MyTicketList.server'
 import { TICKET_STATUS_LABEL } from '../../../types/ticket'
 import type { Ticket, TicketStatus } from '../../../types/ticket'
+import PageNotFound from '../../pageNotFound/PageNotFound'
 
 export default function MyTicketList() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [isLoading, setIsLoading] = useState(true)
   // '' representa "todas": es el valor de la opción por defecto del select.
- const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('')
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('')
 
   // Carga inicial. El array de dependencias vacío hace que corra
   // una sola vez, al montar el componente.
   useEffect(() => {
     // Cada cambio de filtro vuelve a pedir la lista al backend, que ya
-   // acepta ?status=. Por eso statusFilter está en las dependencias.
-   setIsLoading(true)
+    // acepta ?status=. Por eso statusFilter está en las dependencias.
+    setIsLoading(true)
 
-   getMyTickets(statusFilter, {
+    getMyTickets(statusFilter, {
       onSuccess: (data) => {
         setTickets(data)
         setIsLoading(false)
@@ -43,27 +44,27 @@ export default function MyTicketList() {
         <h1 className="text-2xl font-bold text-navy md:text-3xl">Mis entradas</h1>
 
         <div className="flex items-center gap-2">
-         <label htmlFor="status" className="text-sm text-muted">
-           Estado
-         </label>
-         <select
-           id="status"
-           value={statusFilter}
-           onChange={(event) =>
-             setStatusFilter(event.target.value as TicketStatus | '')
-           }
-           className="rounded-lg border border-slate-300 px-3 py-2"
-         >
-           <option value="">Todas</option>
-           {/* Generamos las opciones desde TICKET_STATUS_LABEL: si el
+          <label htmlFor="status" className="text-sm text-muted">
+            Estado
+          </label>
+          <select
+            id="status"
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(event.target.value as TicketStatus | '')
+            }
+            className="rounded-lg border border-slate-300 px-3 py-2"
+          >
+            <option value="">Todas</option>
+            {/* Generamos las opciones desde TICKET_STATUS_LABEL: si el
                backend agrega un estado, aparece solo y con su texto. */}
-           {Object.entries(TICKET_STATUS_LABEL).map(([value, label]) => (
-             <option key={value} value={value}>
-               {label}
-             </option>
-           ))}
-         </select>
-       </div>
+            {Object.entries(TICKET_STATUS_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
       </header>
 
       <Routes>
@@ -84,6 +85,11 @@ export default function MyTicketList() {
         />
         {/* El path no empieza con "/" porque es relativo a /mis-entradas. */}
         <Route path=":id" element={<MyTicketDetails />} />
+
+        {/* Captura sub-rutas inválidas (por ej. /mis-entradas/a/b). Sin esto
+             se vería el encabezado con el cuerpo vacío: /mis-entradas/* ya
+             delegó el resto a este Routes y el 404 de App.tsx no llega. */}
+        <Route path="*" element={<PageNotFound />} />
       </Routes>
     </div>
   )
