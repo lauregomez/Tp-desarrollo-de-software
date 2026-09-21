@@ -28,7 +28,8 @@ export default function MyTicketDetails() {
         setIsLoading(false)
       },
       // Sin toast: el bloque de "no encontrada" de abajo ya explica qué pasó.
-      // Acá cae tanto el 404 como el 403 de una entrada de otro usuario.
+      // Acá cae el 404, tanto si la entrada no existe como si es de otro
+      // usuario: el backend responde igual en los dos casos.
       onError: () => setIsLoading(false),
     })
   }, [id, ticketFromState])
