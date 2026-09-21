@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router'
 import Button from '../../shared/button/Button'
 import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
+import { STATUS_CLASS } from './MyTicketItem.const'
 import { TICKET_STATUS_LABEL } from '../../../types/ticket'
 import type { Ticket } from '../../../types/ticket'
 
@@ -8,14 +9,6 @@ import type { Ticket } from '../../../types/ticket'
 // y esta tarjeta sólo la muestra.
 interface MyTicketItemProps {
   ticket: Ticket
-}
-
-// Un color por estado, para que se distingan de un vistazo.
-// Vive afuera del componente porque no depende de props ni de estado.
-const STATUS_CLASS: Record<Ticket['status'], string> = {
-  PENDING: 'bg-amber-100 text-amber-700',
-  ACTIVE: 'bg-emerald-100 text-emerald-700',
-  USED: 'bg-slate-200 text-slate-600',
 }
 
 export default function MyTicketItem({ ticket }: MyTicketItemProps) {
