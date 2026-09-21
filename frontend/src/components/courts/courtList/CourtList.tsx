@@ -55,7 +55,7 @@ export default function CourtList() {
     })
   }
 
-    const handleUpdateCourt = (id: number, court: CreateCourtDto) => {
+  const handleUpdateCourt = (id: number, court: CreateCourtDto) => {
     updateCourt(id, court, {
       // Reemplazamos sólo la cancha editada en el array local,
       // en vez de volver a pedir la lista entera.
@@ -71,7 +71,7 @@ export default function CourtList() {
     })
   }
 
-    const handleDeleteCourt = (id: number) => {
+  const handleDeleteCourt = (id: number) => {
     deleteCourt(id, {
       // El 204 no devuelve cuerpo: el .server.ts nos pasa el id
       // que le dimos, y con eso filtramos la lista.
@@ -119,7 +119,7 @@ export default function CourtList() {
         </Button>
       </header>
 
-            <Routes>
+      <Routes>
         {/* <Route index> es la ruta por defecto del grupo: /canchas exacto */}
         <Route
           index

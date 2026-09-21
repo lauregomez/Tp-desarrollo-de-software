@@ -40,7 +40,7 @@ export default function Header() {
           {/* Esconder el link es UX, no seguridad: el backend rechaza
               igual a quien no sea ADMIN. Evita mostrar una opción
               que terminaría en un error. */}
-            {user?.role === "ADMIN" && (
+          {user?.role === "ADMIN" && (
             <>
               <NavLink to="/clubes" className={linkClass}>
                 Clubes

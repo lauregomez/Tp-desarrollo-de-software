@@ -41,7 +41,7 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
   const { id } = useParams<{ id: string }>()
   const isEditing = !!id
 
-    // La cancha que CourtList mandó en navigate(..., { state: court }).
+  // La cancha que CourtList mandó en navigate(..., { state: court }).
   // Puede no estar si se abre el link en otra pestaña o desde un marcador.
   const { state } = useLocation()
   const courtFromState = state as Court | null
@@ -58,7 +58,7 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
   const capacityRef = useRef<HTMLInputElement>(null)
   const clubRef = useRef<HTMLSelectElement>(null)
 
-    // Fallback: si estamos editando y no llegó el state (link directo),
+  // Fallback: si estamos editando y no llegó el state (link directo),
   // pedimos la cancha por su id para precargar el formulario.
   useEffect(() => {
     if (!isEditing || courtFromState) return
@@ -88,19 +88,19 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
     event.preventDefault()
 
     const address = form.address.trim()
-   // Sólo dígitos: Number() convierte "12e5" en 1200000, que es un entero
-   // válido. Con el regex, la notación científica y los decimales no pasan.
-   const isDigitsOnly = /^\d+$/.test(form.capacity)
-   const capacity = Number(form.capacity)
+    // Sólo dígitos: Number() convierte "12e5" en 1200000, que es un entero
+    // válido. Con el regex, la notación científica y los decimales no pasan.
+    const isDigitsOnly = /^\d+$/.test(form.capacity)
+    const capacity = Number(form.capacity)
 
-   // Mismas reglas que valida el backend, para avisar antes de hacer la request.
-   const newErrors = {
-     name: form.name.trim() === '',
-     address:
-       address.length < MIN_ADDRESS_LENGTH || address.length > MAX_ADDRESS_LENGTH,
-     capacity: !isDigitsOnly || capacity <= 0 || capacity > MAX_CAPACITY,
-     clubId: form.clubId === '',
-   }
+    // Mismas reglas que valida el backend, para avisar antes de hacer la request.
+    const newErrors = {
+      name: form.name.trim() === '',
+      address:
+        address.length < MIN_ADDRESS_LENGTH || address.length > MAX_ADDRESS_LENGTH,
+      capacity: !isDigitsOnly || capacity <= 0 || capacity > MAX_CAPACITY,
+      clubId: form.clubId === '',
+    }
 
     if (newErrors.name || newErrors.address || newErrors.capacity || newErrors.clubId) {
       setErrors(newErrors)
@@ -181,11 +181,11 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
         {errors.address && (
           <p role="alert" className="text-sm text-brand">
             La dirección debe tener entre {MIN_ADDRESS_LENGTH} y{' '}
-           {MAX_ADDRESS_LENGTH} caracteres.
+            {MAX_ADDRESS_LENGTH} caracteres.
           </p>
         )}
       </div>
-      
+
       <div className="mt-4 flex flex-col gap-1">
         <label htmlFor="capacity" className="text-sm font-medium">
           Capacidad
@@ -198,7 +198,7 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
           ref={capacityRef}
           id="capacity"
           type="text"
-         inputMode="numeric"
+          inputMode="numeric"
           value={form.capacity}
           onChange={(event) => handleChange(event, 'capacity')}
           placeholder="500"
