@@ -160,54 +160,63 @@ async function seedMatches(clubIds: number[], courtIds: number[]) {
   return matches.map((match) => match.id);
 }
 
+/**
+ * Entradas de ejemplo para el usuario común, una por estado.
+ *
+ * Se cargan desde el seed porque todavía no existe el endpoint del pago:
+ * `confirmPayment` está en el service pero ninguna ruta lo expone, así que
+ * por API sólo se pueden crear entradas PENDING. Sin estos datos no hay
+ * forma de probar el listado, el detalle ni el QR.
+ */
 async function seedTickets(userId: number, matchIds: number[]) {
-  const tickets = [
-    {
-      id: 1,
-      // Reserva sin pagar: vence en 15 minutos contados desde que corre el seed.
-      status: TicketStatus.PENDING,
-      code: null, // el QR se genera recién al confirmarse el pago
-      pricePaid: '2500.00',
-      reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
-      mpPaymentId: null,
-      userId,
-      matchId: matchIds[0],
-    },
-    {
-      id: 2,
-      // Entrada pagada y lista para usar: tiene code y ya no tiene hold.
-      status: TicketStatus.ACTIVE,
-      // Código fijo (y no randomUUID) para que el seed sea idempotente:
-      // correrlo dos veces no genera un code distinto ni rompe el unique.
-      code: 'seed-ticket-active-0001',
-      pricePaid: '2500.00',
-      reservedUntil: null,
-      mpPaymentId: 'seed-payment-0001',
-      userId,
-      matchId: matchIds[0],
-    },
-    {
-      id: 3,
-      // Entrada ya usada, asociada al partido finalizado del seed.
-      status: TicketStatus.USED,
-      code: 'seed-ticket-used-0001',
-      pricePaid: '2000.00',
-      reservedUntil: null,
-      mpPaymentId: 'seed-payment-0002',
-      userId,
-      matchId: matchIds[3],
-    },
-  ];
-
-  for (const ticket of tickets) {
-    await prisma.ticket.upsert({
-      where: { id: ticket.id },
-      update: ticket,
-      create: ticket,
-    });
+  // No se usa upsert por id: cuando exista el flujo de compra, las entradas
+  // reales van a ocupar esos ids y el seed las sobrescribiría (incluido el
+  // dueño). Tampoco sirve upsert por code, porque la PENDING no tiene code.
+  // Así que sólo se siembran si el usuario todavía no tiene ninguna: correr
+  // el seed de nuevo no duplica ni pisa entradas existentes.
+  const existing = await prisma.ticket.count({ where: { userId } });
+  if (existing > 0) {
+    console.log('✓ Entradas: el usuario ya tiene, no se crean');
+    return;
   }
 
-  console.log(`✓ Entradas: ${tickets.length}`);
+  await prisma.ticket.createMany({
+    data: [
+      {
+        // Reserva sin pagar: vence en 15 minutos contados desde que corre el seed.
+        status: TicketStatus.PENDING,
+        code: null, // el QR se genera recién al confirmarse el pago
+        pricePaid: '2500.00',
+        reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
+        mpPaymentId: null,
+        userId,
+        matchId: matchIds[0],
+      },
+      {
+        // Entrada pagada y lista para usar: tiene code y ya no tiene hold.
+        // El prefijo "seed-" no puede chocar con un code real, que es un UUID.
+        status: TicketStatus.ACTIVE,
+        code: 'seed-ticket-active-0001',
+        pricePaid: '2500.00',
+        reservedUntil: null,
+        mpPaymentId: 'seed-payment-0001',
+        userId,
+        matchId: matchIds[0],
+      },
+      {
+        // Entrada ya usada, asociada al partido finalizado del seed.
+        status: TicketStatus.USED,
+        code: 'seed-ticket-used-0001',
+        pricePaid: '2000.00',
+        reservedUntil: null,
+        mpPaymentId: 'seed-payment-0002',
+        userId,
+        matchId: matchIds[3],
+      },
+    ],
+  });
+
+  console.log('✓ Entradas: 3');
 }
 
 async function main() {
@@ -224,11 +233,11 @@ async function main() {
 
   const matchIds = await seedMatches(clubIds, courtIds);
 
-   // Las entradas van al usuario común: admin y operador no compran.
-   const buyer = users.find((u) => u.email === 'usuario@arf.com');
-   if (buyer) {
-     await seedTickets(buyer.id, matchIds);
-   }
+  // Las entradas van al usuario común: admin y operador no compran.
+  const buyer = users.find((u) => u.email === 'usuario@arf.com');
+  if (buyer) {
+    await seedTickets(buyer.id, matchIds);
+  }
 
   console.log('\nSeed completado.');
 }
