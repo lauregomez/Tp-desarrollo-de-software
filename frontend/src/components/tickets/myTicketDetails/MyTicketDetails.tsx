@@ -75,12 +75,12 @@ export default function MyTicketDetails() {
         </div>
         {/* Sin pricePaid (vista de staff) no mostramos la línea: formatear
            undefined daría "$ NaN". */}
-       {ticket.pricePaid && (
-         <div>
-           <dt className="inline">Precio pagado: </dt>
-           <dd className="inline">{formatPrice(ticket.pricePaid)}</dd>
-         </div>
-       )}
+        {ticket.pricePaid && (
+          <div>
+            <dt className="inline">Precio pagado: </dt>
+            <dd className="inline">{formatPrice(ticket.pricePaid)}</dd>
+          </div>
+        )}
       </dl>
 
       {/* El código es el dato que se va a convertir en QR. Mientras la
@@ -94,11 +94,11 @@ export default function MyTicketDetails() {
             {/* La indicación sólo aplica a una entrada válida: en una USED
                el código queda visible como comprobante, pero ya no sirve
                para ingresar. */}
-           {ticket.status === 'ACTIVE' && (
-             <p className="mt-2 text-xs text-muted">
-               Presentá este código en la entrada de la cancha.
-             </p>
-           )}
+            {ticket.status === 'ACTIVE' && (
+              <p className="mt-2 text-xs text-muted">
+                Presentá este código en la entrada de la cancha.
+              </p>
+            )}
           </>
         ) : (
           <p className="text-sm text-muted">
