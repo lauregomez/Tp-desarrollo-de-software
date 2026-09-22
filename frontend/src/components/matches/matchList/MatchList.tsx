@@ -4,6 +4,7 @@ import MatchCard from '../matchCard/MatchCard'
 import { errorToast } from '../../../shared/notifications'
 import { getMatches } from './MatchList.server'
 import Hero from '../../home/hero/Hero'
+import EmptyState from '../../shared/emptyState/EmptyState'
 import type { PublicMatch } from '../../../types/match'
 
 export default function MatchList() {
@@ -54,9 +55,12 @@ export default function MatchList() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {matchesMapped}
         </div>
-      ) : (
-        <p className="text-muted">No hay partidos disponibles por el momento.</p>
-      )}
+       ) : (
+         <EmptyState
+           title="No hay partidos disponibles"
+           message="Todavía no se publicaron partidos. Volvé a pasar en unos días."
+         />
+       )}
        </section>
      </>
   )
