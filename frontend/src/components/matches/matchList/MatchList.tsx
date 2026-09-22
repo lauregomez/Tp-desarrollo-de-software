@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import MatchCard from '../matchCard/MatchCard'
 import { errorToast } from '../../../shared/notifications'
 import { getMatches } from './MatchList.server'
+import Hero from '../../home/hero/Hero'
+import EmptyState from '../../shared/emptyState/EmptyState'
 import type { PublicMatch } from '../../../types/match'
 
 export default function MatchList() {
@@ -37,8 +39,15 @@ export default function MatchList() {
   ))
 
   return (
-    <section>
-      <h1 className="sr-only">Partidos</h1>
+     <>
+       <Hero />
+
+       {/* id: destino del botón "Ver próximos partidos" del hero.
+           scroll-mt deja aire arriba al saltar, para que el título no quede
+           pegado al borde de la ventana. */}
+       <section id="partidos" className="scroll-mt-6">
+         {/* h2 y no h1: el título principal de la página es el del hero. */}
+         <h2 className="mb-4 text-2xl font-bold text-navy">Próximos partidos</h2>
 
       {isLoading ? (
         <p className="text-muted">Cargando partidos…</p>
@@ -46,9 +55,13 @@ export default function MatchList() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {matchesMapped}
         </div>
-      ) : (
-        <p className="text-muted">No hay partidos disponibles por el momento.</p>
-      )}
-    </section>
+       ) : (
+         <EmptyState
+           title="No hay partidos disponibles"
+           message="Todavía no se publicaron partidos. Volvé a pasar en unos días."
+         />
+       )}
+       </section>
+     </>
   )
 }
