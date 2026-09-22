@@ -122,21 +122,56 @@ async function seedClubs() {
   return created;
 }
 
-async function seedCourts(clubIds: number[]) {
+async function seedCourts(clubs: { id: number; name: string }[]) {
   const courts = [
-    { name: 'Cancha 1', address: 'Bv. Oroño 1450, Rosario', capacity: 500, clubId: clubIds[0] },
-    { name: 'Cancha 2', address: 'Bv. Oroño 1450, Rosario', capacity: 400, clubId: clubIds[0] },
-    { name: 'Cancha Norte', address: 'Av. Alberdi 850, Rosario', capacity: 300, clubId: clubIds[1] },
+    { club: 'Club Velocidad y Resistencia', name: 'Cancha Velocidad y Resistencia', address: 'Urquiza 2737, Rosario', capacity: 400 },
+    { club: 'Club Atlético Rosario Central', name: 'Cancha Rosario Central', address: 'Mitre 853, Rosario', capacity: 800 },
+    { club: "Club Atlético Newell's Old Boys", name: "Cancha Newell's", address: 'Parque Independencia s/n, Rosario', capacity: 800 },
+    { club: 'Club Atlético Provincial', name: 'Cancha Provincial', address: 'Bv. 27 de Febrero 2672, Rosario', capacity: 500 },
+    { club: 'Club Atlético Horizonte', name: 'Cancha Horizonte', address: 'Suipacha 1363, Rosario', capacity: 250 },
+    { club: 'Unión Sionista Argentina de Rosario', name: 'Cancha Unión Sionista', address: 'Salta 2555, Rosario', capacity: 300 },
+    { club: 'Náutico Sportivo Avellaneda', name: 'Cancha Náutico Avellaneda', address: 'Pedro Tuella 952, Rosario', capacity: 400 },
+    { club: 'Club Social Argentino Sirio', name: 'Cancha Sirio', address: 'Italia 965, Rosario', capacity: 300 },
+    { club: 'Sociedad Tiro Suizo Rosario', name: 'Cancha Tiro Suizo', address: 'Cortada Raffo 5120, Rosario', capacity: 250 },
+    { club: 'Club Atlético Banco Nación', name: 'Cancha Banco Nación', address: 'Bv. Rondeau 2932, Rosario', capacity: 300 },
+    { club: 'Remeros Alberdi', name: 'Cancha Remeros Alberdi', address: 'Av. Carrasco 2055, Rosario', capacity: 250 },
+    { club: 'Colegio Marista Rosario', name: 'Cancha Colegio Marista', address: 'Bv. Oroño 770, Rosario', capacity: 200 },
+    { club: 'Rosario Rowing Club', name: 'Cancha Rosario Rowing', address: 'Av. Colombres 1798, Rosario', capacity: 250 },
+    { club: 'Club Atlético Sagrado Corazón', name: 'Cancha Sagrado Corazón', address: 'Dorrego 1260, Rosario', capacity: 250 },
+    { club: 'Jockey Club Rosario', name: 'Cancha Jockey Club', address: 'Córdoba y Wilde, Rosario', capacity: 300 },
+    { club: 'Club Residentes Parquefield', name: 'Cancha Parquefield', address: 'Del Blanqui 2120, Rosario', capacity: 200 },
+    { club: 'Club de Regatas Rosario', name: 'Cancha Regatas', address: 'Juan B. Cordiviola 1268, Rosario', capacity: 350 },
+    { club: 'Club Universitario', name: 'Cancha Universitario', address: 'Av. del Huerto 1051, Rosario', capacity: 300 },
+    { club: 'Universidad Nacional de Rosario', name: 'Cancha UNR', address: 'Moreno 460, Rosario', capacity: 400 },
+    { club: 'Club Social y Deportivo Unión Americana', name: 'Cancha Unión Americana', address: 'Brassey 7801 (esq. Colombres), Rosario', capacity: 250 },
+    { club: 'Club Atlético María Madre de La Lata', name: 'Cancha La Lata', address: 'Presidente Quintana 1600, Rosario', capacity: 150 },
+    { club: 'Club Atlético Talleres Rosario Puerto Belgrano', name: 'Cancha Talleres', address: 'Juan D. Perón 1790, Villa Gobernador Gálvez', capacity: 250 },
+    { club: 'Club Social y Deportivo Nueva Aurora', name: 'Cancha Nueva Aurora', address: 'Suipacha 2175, Rosario', capacity: 200 },
+    { club: 'Club Atlético Libertad', name: 'Cancha Libertad', address: 'Felipe Moré 1150, Rosario', capacity: 250 },
+    { club: 'Club Social y Deportivo Federal', name: 'Cancha Federal', address: 'Zeballos 4649, Rosario', capacity: 250 },
+    { club: 'Club Deportivo Unión Central', name: 'Cancha Unión Central', address: 'Iguazú y Junín, Rosario', capacity: 200 },
+    { club: 'Club Social y Deportivo Río Negro', name: 'Cancha Río Negro', address: 'Forest 6251, Rosario', capacity: 200 },
+    { club: 'Club Deportivo y Social Lux', name: 'Cancha Lux', address: 'Pascual Rosas 403, Rosario', capacity: 250 },
+    { club: 'Club Atlético Social Deportivo y Cultural 1º de Mayo', name: 'Cancha 1º de Mayo', address: 'Av. Kennedy y Gianneo, Rosario', capacity: 200 },
+    { club: 'Club Teléfonos Rosario', name: 'Cancha Teléfonos', address: 'Buchanan 551, Rosario', capacity: 250 },
   ];
 
+  const clubIdByName = new Map(clubs.map((club) => [club.name, club.id]));
+
   const created = await Promise.all(
-    courts.map((court) =>
-      prisma.court.upsert({
-        where: { clubId_name: { clubId: court.clubId, name: court.name } },
+    courts.map(({ club, ...court }) => {
+      const clubId = clubIdByName.get(club);
+      // Un error de tipeo en el nombre corta el seed con un mensaje claro,
+      // en vez de fallar más adelante con un error de Prisma difícil de leer.
+      if (clubId === undefined) {
+        throw new Error(`Seed: no existe el club "${club}"`);
+      }
+      return prisma.court.upsert({
+        where: { clubId_name: { clubId, name: court.name } },
         update: { capacity: court.capacity, address: court.address },
-        create: court,
-      }),
-    ),
+        create: { ...court, clubId },
+      });
+    }),
   );
 
   console.log(`✓ Canchas: ${created.length}`);
@@ -271,7 +306,7 @@ async function main() {
   const clubs = await seedClubs();
   const clubIds = clubs.map((c) => c.id);
 
-  const courts = await seedCourts(clubIds);
+  const courts = await seedCourts(clubs);
   const courtIds = courts.map((c) => c.id);
 
   const matchIds = await seedMatches(clubIds, courtIds);
