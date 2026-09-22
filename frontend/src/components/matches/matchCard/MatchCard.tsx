@@ -2,20 +2,10 @@ import { Link } from 'react-router'
 import type { PublicMatch } from '../../../types/match'
 import { CATEGORY_LABEL } from '../../../types/match'
 import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
+import ClubLogo from '../../shared/clubLogo/ClubLogo'
 
 interface MatchCardProps {
   match: PublicMatch
-}
-
-function ClubBadge({ name }: { name: string }) {
-  return (
-    <div
-      className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-500"
-      aria-hidden="true"
-    >
-      {name.slice(0, 3).toUpperCase()}
-    </div>
-  )
 }
 
 export default function MatchCard({ match }: MatchCardProps) {
@@ -23,7 +13,7 @@ export default function MatchCard({ match }: MatchCardProps) {
 
   return (
     <article
-      className={`overflow-hidden rounded-xl border border-slate-200 bg-white ${
+      className={`flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white ${
         soldOut ? 'opacity-60' : ''
       }`}
     >
@@ -32,15 +22,17 @@ export default function MatchCard({ match }: MatchCardProps) {
         <span>{formatShortDate(match.startsAt)}</span>
       </header>
 
-      <div className="p-4">
-        <div className="flex items-center justify-center gap-4">
+      <div className="flex-1 p-4">
+        {/* items-start: los nombres largos ocupan más líneas y, centrando,
+            los escudos quedaban a distinta altura. */}
+        <div className="flex items-start justify-center gap-4">
           <div className="flex flex-1 flex-col items-center gap-2 text-center">
-            <ClubBadge name={homeClub.name} />
+            <ClubLogo name={homeClub.name} logoUrl={homeClub.logoUrl} />
             <span className="font-semibold">{homeClub.name}</span>
           </div>
-          <span className="text-sm text-muted">vs</span>
+          <span className="mt-4 text-sm text-muted">vs</span>
           <div className="flex flex-1 flex-col items-center gap-2 text-center">
-            <ClubBadge name={awayClub.name} />
+            <ClubLogo name={awayClub.name} logoUrl={awayClub.logoUrl} />
             <span className="font-semibold">{awayClub.name}</span>
           </div>
         </div>
