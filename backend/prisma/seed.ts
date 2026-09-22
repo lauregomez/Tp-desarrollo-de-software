@@ -178,7 +178,24 @@ async function seedCourts(clubs: { id: number; name: string }[]) {
   return created;
 }
 
-async function seedMatches(clubIds: number[], courtIds: number[]) {
+async function seedMatches(
+  clubs: { id: number; name: string }[],
+  courts: { id: number; name: string }[],
+) {
+  const clubIdByName = new Map(clubs.map((club) => [club.name, club.id]));
+  // En el schema el nombre de cancha es único solo por club, pero en este
+  // seed no se repite ninguno, así que alcanza con buscar por nombre.
+  const courtIdByName = new Map(courts.map((court) => [court.name, court.id]));
+
+  const idOf = (ids: Map<string, number>, name: string) => {
+    const id = ids.get(name);
+    // Un error de tipeo corta el seed con un mensaje claro.
+    if (id === undefined) {
+      throw new Error(`Seed: no existe "${name}"`);
+    }
+    return id;
+  };
+
   const matches = [
     {
       id: 1,
@@ -186,20 +203,21 @@ async function seedMatches(clubIds: number[], courtIds: number[]) {
       price: '2500.00',
       category: Category.PRIMERA,
       capacity: null,
-      homeClubId: clubIds[0],
-      awayClubId: clubIds[1],
-      courtId: courtIds[0],
+      home: 'Club Atlético Rosario Central',
+      away: "Club Atlético Newell's Old Boys",
+      court: 'Cancha Rosario Central',
       status: MatchStatus.PUBLISHED,
     },
     {
+      // Ninguno de los dos es dueño de la cancha: la alquilan a Federal.
       id: 2,
       startsAt: inDays(7, 18, 0),
       price: '2500.00',
       category: Category.PRIMERA,
       capacity: 200, // override: no se habilita toda la cancha
-      homeClubId: clubIds[2],
-      awayClubId: clubIds[3],
-      courtId: courtIds[1],
+      home: 'Echesortu Fútbol Club',
+      away: 'Club Social y Deportivo El Luchador',
+      court: 'Cancha Federal',
       status: MatchStatus.PUBLISHED,
     },
     {
@@ -208,29 +226,36 @@ async function seedMatches(clubIds: number[], courtIds: number[]) {
       price: '3000.00',
       category: Category.RESERVA,
       capacity: null,
-      homeClubId: clubIds[1],
-      awayClubId: clubIds[0],
-      courtId: courtIds[2],
+      home: 'Club de Regatas Rosario',
+      away: 'Rosario Rowing Club',
+      court: 'Cancha Regatas',
       status: MatchStatus.DRAFT, // para probar optionalAuthenticate
     },
     {
+      // Central Córdoba es local en una cancha alquilada a Unión Central.
       id: 4,
       startsAt: inDays(-3, 20, 0),
       price: '2000.00',
       category: Category.PRIMERA,
       capacity: null,
-      homeClubId: clubIds[3],
-      awayClubId: clubIds[2],
-      courtId: courtIds[0],
+      home: 'Club Atlético Central Córdoba',
+      away: 'Náutico Sportivo Avellaneda B',
+      court: 'Cancha Unión Central',
       status: MatchStatus.FINISHED,
     },
   ];
 
-  for (const match of matches) {
+  for (const { home, away, court, ...match } of matches) {
+    const data = {
+      ...match,
+      homeClubId: idOf(clubIdByName, home),
+      awayClubId: idOf(clubIdByName, away),
+      courtId: idOf(courtIdByName, court),
+    };
     await prisma.match.upsert({
       where: { id: match.id },
-      update: match,
-      create: match,
+      update: data,
+      create: data,
     });
   }
 
@@ -304,12 +329,10 @@ async function main() {
   const users = await seedUsers();
 
   const clubs = await seedClubs();
-  const clubIds = clubs.map((c) => c.id);
 
   const courts = await seedCourts(clubs);
-  const courtIds = courts.map((c) => c.id);
 
-  const matchIds = await seedMatches(clubIds, courtIds);
+  const matchIds = await seedMatches(clubs, courts);
 
   // Jaste recibe las entradas de ejemplo; Jager queda sin entradas para
   // probar el estado vacío de "Mis entradas".
