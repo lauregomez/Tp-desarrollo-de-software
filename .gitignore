@@ -6,3 +6,5 @@ frontend/.env
 .env
 .env.*
 !.env.example
+# Caché de compilación de TypeScript
+*.tsbuildinfo
