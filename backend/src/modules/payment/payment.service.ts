@@ -141,7 +141,6 @@ export const paymentService = {
         ],
         config: {
           online: {
-            callback_url: `${BACKEND_PUBLIC_URL}/api/payments/webhook`,
             success_url: `${FRONTEND_URL}/pago/confirmando`,
             failure_url: `${FRONTEND_URL}/pago/error`,
             pending_url: `${FRONTEND_URL}/pago/confirmando`,
