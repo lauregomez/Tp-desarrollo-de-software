@@ -13,6 +13,7 @@ import Protected from './components/auth/protected/Protected'
 import PageNotFound from './components/pageNotFound/PageNotFound'
 import { useAuth } from './context/useAuth'
 import MatchAdmin from './components/matches/matchAdmin/MatchAdmin'
+import UserList from './components/users/userList/UserList'
 
 export default function App() {
   // La sesión se lee acá y baja por props a Protected, que se mantiene
@@ -42,6 +43,7 @@ export default function App() {
                 ese nivel y no hay que subirlos a App. */}
             <Route path="/clubes/*" element={<ClubList />} />
             <Route path="/canchas/*" element={<CourtList />} />
+            <Route path="/admin/usuarios/*" element={<UserList />} />
             <Route path="/admin/partidos/*" element={<MatchAdmin />} />
           </Route>
                     {/* Cualquier usuario logueado ve sus propias entradas: este

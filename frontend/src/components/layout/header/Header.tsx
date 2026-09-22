@@ -48,6 +48,9 @@ export default function Header() {
               <NavLink to="/canchas" className={linkClass}>
                 Canchas
               </NavLink>
+              <NavLink to="/admin/usuarios" className={linkClass}>
+                Usuarios
+              </NavLink>
               <NavLink to="/admin/partidos" className={linkClass}>
                 Gestión
               </NavLink>
