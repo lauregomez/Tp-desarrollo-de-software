@@ -4,6 +4,7 @@ import { AuthRequest } from '../../middlewares/auth.types';
 import { ticketService } from '../ticket/ticket.service';
 import { userService } from '../user/user.service';
 import { paymentService } from './payment.service';
+import { WebhookNotification } from './payment.types';
 import { MAX_TICKETS_PER_USER_PER_MATCH } from '../ticket/ticket.types';
 import { env } from '../../config/env';
 
@@ -108,5 +109,125 @@ export const paymentController = {
     await ticketService.attachOrder(ticketIds, order.orderId);
 
     res.status(201).json({ checkoutUrl: order.checkoutUrl });
+  },
+
+  /**
+   * POST /api/payments/webhook
+   *
+   * Notificación de MercadoPago. No lleva authenticate: la autenticidad se
+   * establece con la firma, no con un token propio.
+   *
+   * Criterio de códigos: todo lo que no tenga arreglo reintentando responde
+   * 200 y queda en el log. Sólo los fallos transitorios se dejan propagar
+   * para que el errorHandler devuelva 500 y MercadoPago vuelva a notificar.
+   */
+  async handleWebhook(req: Request, res: Response): Promise<void> {
+    // La firma se verifica antes que nada: hasta confirmar el origen, nada
+    // de lo que llega es confiable.
+    const dataId = req.query['data.id'];
+    const check = paymentService.verifyWebhookSignature({
+      xSignature: req.headers['x-signature'],
+      xRequestId: req.headers['x-request-id'],
+      dataId: typeof dataId === 'string' ? dataId : undefined,
+    });
+
+    if (!check.valid) {
+      // Se loguean el motivo y el x-request-id, que es lo que identifica a la
+      // notificación en el panel de MercadoPago. La firma recibida no se
+      // loguea nunca.
+      console.error(
+        '[webhook] firma rechazada:',
+        check.reason,
+        '- x-request-id:',
+        req.headers['x-request-id'] ?? '(sin request id)',
+      );
+      res.status(401).end();
+      return;
+    }
+
+    const notification = req.body as WebhookNotification;
+
+    // Sólo interesan las órdenes. El resto se acepta para que MercadoPago
+    // deje de reintentarlas, pero queda registrado: sin esta línea, una
+    // notificación de tipo inesperado se descarta sin dejar rastro.
+    if (notification?.type !== 'order') {
+      console.log('[webhook] notificación ignorada, tipo:', notification?.type);
+      res.status(200).end();
+      return;
+    }
+
+    if (typeof dataId !== 'string' || dataId.length === 0) {
+      console.error('[webhook] notificación de orden sin data.id');
+      res.status(200).end();
+      return;
+    }
+
+    // El body podría estar adulterado: la orden se pide a MercadoPago.
+    const order = await paymentService.getOrder(dataId);
+
+    if (!order) {
+      console.error('[webhook] la orden no existe en MercadoPago:', dataId);
+      res.status(200).end();
+      return;
+    }
+
+    // Sólo un pago acreditado habilita las entradas.
+    if (order.status !== 'processed' || order.status_detail !== 'accredited') {
+      console.log(
+        `[webhook] orden ${dataId} sin acreditar (${order.status}/${order.status_detail})`,
+      );
+      res.status(200).end();
+      return;
+    }
+
+    const paymentId = order.transactions?.payments?.[0]?.id;
+    const orderId = order.id;
+
+    if (!paymentId || !orderId) {
+      console.error('[webhook] orden acreditada sin id de pago:', dataId);
+      res.status(200).end();
+      return;
+    }
+
+    // La base es la que sabe qué entradas cubre la orden.
+    const tickets = await ticketService.findByOrderId(orderId);
+
+    if (tickets.length === 0) {
+      console.error('[webhook] no hay entradas para la orden:', orderId);
+      res.status(200).end();
+      return;
+    }
+
+    // El external_reference llega en la notificación y podría no reflejar lo
+    // guardado: si no coincide con la base, no se confirma nada.
+    const referenced = (order.external_reference ?? '')
+      .split('-')
+      .map(Number)
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    const ticketIds = tickets.map((t) => t.id);
+    const sameTickets =
+      referenced.length === ticketIds.length &&
+      ticketIds.every((id) => referenced.includes(id));
+
+    if (!sameTickets) {
+      console.error(
+        `[webhook] la orden ${orderId} no coincide con las entradas guardadas`,
+      );
+      res.status(200).end();
+      return;
+    }
+
+    // confirmPayment sólo toca las PENDING: en un reintento no queda nada por
+    // confirmar y no se regeneran los QR ya emitidos.
+    const confirmed = await ticketService.confirmPayment(ticketIds, paymentId);
+
+    console.log(
+      confirmed.length > 0
+        ? `[webhook] orden ${orderId}: ${confirmed.length} entradas confirmadas`
+        : `[webhook] orden ${orderId}: ya estaba confirmada`,
+    );
+
+    res.status(200).end();
   },
 };

@@ -209,15 +209,29 @@ export const ticketService = {
       const confirmed: TicketWithRelations[] = [];
 
       for (const { id } of pending) {
-        const ticket = await tx.ticket.update({
-          where: { id },
+        // El status va también en el where del update: con dos notificaciones
+        // simultáneas, las dos pasan el findMany, pero el UPDATE relee la fila
+        // después de esperar el lock y solo una la encuentra PENDING. Sin esto,
+        // la segunda regeneraría el code y el QR que ya tiene el usuario
+        // dejaría de valer. updateMany en vez de update porque no tira error
+        // cuando no hay coincidencia.
+        const { count } = await tx.ticket.updateMany({
+          where: { id, status: TicketStatus.PENDING },
           data: {
             status: TicketStatus.ACTIVE,
             code: randomUUID(),
             mpPaymentId,
             reservedUntil: null, // ya no hay hold que vencer
-            mpOrderId: null, // la orden se cerró
+            // mpOrderId se conserva: es la trazabilidad de la orden y lo que
+            // permite reencontrar estos tickets cuando MercadoPago reintenta
+            // la notificación.
           },
+        });
+
+        if (count === 0) continue; // otra notificación la confirmó primero
+
+        const ticket = await tx.ticket.findUniqueOrThrow({
+          where: { id },
           include: TICKET_INCLUDE,
         });
         confirmed.push(ticket);
@@ -255,6 +269,20 @@ export const ticketService = {
       data: { mpOrderId },
     });
     return count;
+  },
+
+  /**
+   * Trae los tickets asociados a una orden de MercadoPago.
+   *
+   * La base es la fuente de verdad sobre qué entradas cubre la orden: el
+   * external_reference de la notificación es un dato externo y sólo se usa
+   * para contrastar.
+   */
+  async findByOrderId(mpOrderId: string) {
+    return prisma.ticket.findMany({
+      where: { mpOrderId },
+      select: { id: true, status: true },
+    });
   },
   
   /**
