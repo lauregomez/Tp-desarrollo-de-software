@@ -6,6 +6,7 @@ import ClubForm from '../clubForm/ClubForm'
 import ClubDetails from '../clubDetails/ClubDetails'
 import PageNotFound from '../../pageNotFound/PageNotFound'
 import Button from '../../shared/button/Button'
+import EmptyState from '../../shared/emptyState/EmptyState'
 import { successToast, errorToast } from '../../../shared/notifications'
 import { getClubs, createClub, updateClub, deleteClub } from './ClubList.server'
 import type { Club, CreateClubDto } from '../../../types/club'
@@ -113,7 +114,10 @@ export default function ClubList() {
                 {clubsMapped}
               </div>
             ) : (
-              <p className="text-muted">Todavía no hay clubes cargados.</p>
+              <EmptyState
+                title="Todavía no hay clubes"
+                message="Cargá el primero con el botón «Nuevo club»."
+              />
             )
           }
         />
