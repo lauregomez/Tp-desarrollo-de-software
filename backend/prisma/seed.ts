@@ -4,6 +4,11 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+// Precio de la entrada general, igual para todos los partidos del seed.
+// Las entradas guardan su propio pricePaid: usamos la misma constante
+// para que coincida con el precio del partido al que pertenecen.
+const TICKET_PRICE = '7000.00';
+
 const SALT_ROUNDS = 10;
 const DEFAULT_PASSWORD = process.env.SEED_PASSWORD ?? 'Password123!';
 
@@ -200,7 +205,7 @@ async function seedMatches(
     {
       id: 1,
       startsAt: inDays(5, 20, 30),
-      price: '2500.00',
+      price: TICKET_PRICE,
       category: Category.PRIMERA,
       capacity: null,
       home: 'Club Atlético Rosario Central',
@@ -212,7 +217,7 @@ async function seedMatches(
       // Ninguno de los dos es dueño de la cancha: la alquilan a Federal.
       id: 2,
       startsAt: inDays(7, 18, 0),
-      price: '2500.00',
+      price: TICKET_PRICE,
       category: Category.PRIMERA,
       capacity: 200, // override: no se habilita toda la cancha
       home: 'Echesortu Fútbol Club',
@@ -223,7 +228,7 @@ async function seedMatches(
     {
       id: 3,
       startsAt: inDays(12, 21, 0),
-      price: '3000.00',
+      price: TICKET_PRICE,
       category: Category.RESERVA,
       capacity: null,
       home: 'Club de Regatas Rosario',
@@ -235,7 +240,7 @@ async function seedMatches(
       // Central Córdoba es local en una cancha alquilada a Unión Central.
       id: 4,
       startsAt: inDays(-3, 20, 0),
-      price: '2000.00',
+      price: TICKET_PRICE,
       category: Category.PRIMERA,
       capacity: null,
       home: 'Club Atlético Central Córdoba',
@@ -289,7 +294,7 @@ async function seedTickets(userId: number, matchIds: number[]) {
         // Reserva sin pagar: vence en 15 minutos contados desde que corre el seed.
         status: TicketStatus.PENDING,
         code: null, // el QR se genera recién al confirmarse el pago
-        pricePaid: '2500.00',
+        pricePaid: TICKET_PRICE,
         reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
         mpPaymentId: null,
         userId,
@@ -300,7 +305,7 @@ async function seedTickets(userId: number, matchIds: number[]) {
         // El prefijo "seed-" no puede chocar con un code real, que es un UUID.
         status: TicketStatus.ACTIVE,
         code: 'seed-ticket-active-0001',
-        pricePaid: '2500.00',
+        pricePaid: TICKET_PRICE,
         reservedUntil: null,
         mpPaymentId: 'seed-payment-0001',
         userId,
@@ -310,7 +315,7 @@ async function seedTickets(userId: number, matchIds: number[]) {
         // Entrada ya usada, asociada al partido finalizado del seed.
         status: TicketStatus.USED,
         code: 'seed-ticket-used-0001',
-        pricePaid: '2000.00',
+        pricePaid: TICKET_PRICE,
         reservedUntil: null,
         mpPaymentId: 'seed-payment-0002',
         userId,

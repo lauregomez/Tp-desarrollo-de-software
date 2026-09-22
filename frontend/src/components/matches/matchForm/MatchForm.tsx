@@ -273,7 +273,7 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
             min="1"
             value={form.price}
             onChange={(e) => handleChange(e, 'price')}
-            placeholder="2500"
+            placeholder="7000"
             className={inputClass}
           />
         </div>
