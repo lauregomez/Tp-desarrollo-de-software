@@ -7,6 +7,7 @@ import matchRoutes from './modules/match/match.routes';
 import userRouter from './modules/user/user.routes';
 import authRouter from './modules/auth/auth.routes';
 import ticketRoutes from './modules/ticket/ticket.routes';
+import paymentRoutes from './modules/payment/payment.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 dotenv.config();
@@ -25,6 +26,7 @@ app.use('/api/courts', courtRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/users', userRouter);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/auth', authRouter);
 
 app.use(errorHandler);

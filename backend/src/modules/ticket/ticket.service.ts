@@ -50,6 +50,9 @@ export type TicketWithRelations = Prisma.TicketGetPayload<{
  * Estrategia: en vez de un cron que limpie periódicamente, se limpia al
  * inicio de cada reserva. El cupo se libera exactamente cuando alguien lo
  * necesita y no hace falta infraestructura extra.
+ *
+ * Los tickets con mpOrderId quedan excluidos: ya tienen una orden de pago
+ * abierta y borrarlos dejaría al comprador pagando algo que no existe.
  */
 async function releaseExpired(
   tx: Prisma.TransactionClient,
@@ -60,6 +63,7 @@ async function releaseExpired(
       matchId,
       status: TicketStatus.PENDING,
       reservedUntil: { lt: new Date() },
+      mpOrderId: null,
     },
   });
   return count;
@@ -139,7 +143,9 @@ export const ticketService = {
 
       // 4. Cupo del partido: capacity del partido pisa la de la cancha.
       const capacity = match.capacity ?? match.court.capacity;
-      const occupied = await tx.ticket.count({ where: { matchId: dto.matchId } });
+      const occupied = await tx.ticket.count({
+        where: { matchId: dto.matchId },
+      });
 
       if (occupied + dto.quantity > capacity) {
         return { ok: false as const, reason: 'NOT_ENOUGH_CAPACITY' as const };
@@ -171,26 +177,31 @@ export const ticketService = {
   },
 
   /**
-   * Confirma las reservas vigentes de un usuario para un partido tras el pago.
-   * La va a llamar el webhook de MercadoPago.
+   * Confirma las entradas de una orden de pago aprobada.
+   * La llama el webhook de MercadoPago.
    *
-   * Genera un code único por ticket (un QR por entrada) usando randomUUID().
-   * Es una decisión de seguridad: un código secuencial (ENT-0001, ENT-0002)
-   * permitiría adivinar entradas válidas por fuerza bruta. El UUID v4 es
-   * criptográficamente impredecible.
+   * Recibe los ids concretos porque son los que viajan en el
+   * external_reference de la orden: deducirlos por usuario y partido
+   * confirmaría también reservas hechas después de iniciar el pago.
+   *
+   * Filtrar por PENDING da idempotencia: MercadoPago reintenta las
+   * notificaciones y en la segunda no queda nada para confirmar.
+   *
+   * No se filtra por reservedUntil: si el pago se aprobó, la entrada se
+   * entrega aunque el hold haya vencido durante el checkout.
+   *
+   * El code se genera con randomUUID() y no de forma secuencial para que
+   * no se puedan adivinar entradas válidas por fuerza bruta.
    */
   async confirmPayment(
-    userId: number,
-    matchId: number,
+    ticketIds: number[],
     mpPaymentId: string,
   ): Promise<TicketWithRelations[]> {
     return prisma.$transaction(async (tx) => {
       const pending = await tx.ticket.findMany({
         where: {
-          userId,
-          matchId,
+          id: { in: ticketIds },
           status: TicketStatus.PENDING,
-          reservedUntil: { gte: new Date() },
         },
         select: { id: true },
       });
@@ -205,6 +216,7 @@ export const ticketService = {
             code: randomUUID(),
             mpPaymentId,
             reservedUntil: null, // ya no hay hold que vencer
+            mpOrderId: null, // la orden se cerró
           },
           include: TICKET_INCLUDE,
         });
@@ -215,6 +227,36 @@ export const ticketService = {
     });
   },
 
+    /**
+   * Trae los tickets de una compra para validarlos antes de crear la orden.
+   * Devuelve sólo lo necesario para decidir si el pago puede iniciarse.
+   */
+  async findForPayment(ticketIds: number[]) {
+    return prisma.ticket.findMany({
+      where: { id: { in: ticketIds } },
+      select: {
+        id: true,
+        userId: true,
+        matchId: true,
+        status: true,
+        pricePaid: true,
+        mpOrderId: true,
+      },
+    });
+  },
+
+  /**
+   * Asocia la orden de MercadoPago a los tickets.
+   * A partir de acá releaseExpired no los toca: están en proceso de pago.
+   */
+  async attachOrder(ticketIds: number[], mpOrderId: string): Promise<number> {
+    const { count } = await prisma.ticket.updateMany({
+      where: { id: { in: ticketIds }, status: TicketStatus.PENDING },
+      data: { mpOrderId },
+    });
+    return count;
+  },
+  
   /**
    * Marca una entrada como usada al ingresar al evento.
    *
