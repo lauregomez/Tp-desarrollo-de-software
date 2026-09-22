@@ -5,6 +5,7 @@ import CourtItem from '../courtItem/CourtItem'
 import CourtDetails from '../courtDetails/CourtDetails'
 import CourtForm from '../courtForm/CourtForm'
 import Button from '../../shared/button/Button'
+import EmptyState from '../../shared/emptyState/EmptyState'
 import { successToast, errorToast } from '../../../shared/notifications'
 import { getCourts, getClubs, createCourt, updateCourt, deleteCourt } from './CourtList.server'
 import type { Court, CreateCourtDto } from '../../../types/court'
@@ -131,7 +132,10 @@ export default function CourtList() {
                 {courtsMapped}
               </div>
             ) : (
-              <p className="text-muted">Todavía no hay canchas cargadas.</p>
+              <EmptyState
+                title="Todavía no hay canchas"
+                message="Cargá la primera con el botón «Nueva cancha»."
+              />
             )
           }
         />

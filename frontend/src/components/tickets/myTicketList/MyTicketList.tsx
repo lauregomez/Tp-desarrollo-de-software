@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Routes, Route } from 'react-router'
+import { Link, Routes, Route } from 'react-router'
 
 import MyTicketDetails from '../myTicketDetails/MyTicketDetails'
 import MyTicketItem from '../myTicketItem/MyTicketItem'
@@ -8,6 +8,8 @@ import { errorToast } from '../../../shared/notifications'
 import { getMyTickets } from './MyTicketList.server'
 import { TICKET_STATUS_LABEL } from '../../../types/ticket'
 import type { Ticket, TicketStatus } from '../../../types/ticket'
+import Button from '../../shared/button/Button'
+import EmptyState from '../../shared/emptyState/EmptyState'
 
 export default function MyTicketList() {
   const [tickets, setTickets] = useState<Ticket[]>([])
@@ -48,6 +50,34 @@ export default function MyTicketList() {
     <MyTicketItem key={ticket.id} ticket={ticket} />
   ))
 
+  // Sin filtro, el usuario no tiene ninguna entrada: lo útil es ir a comprar.
+  // Con filtro, tiene entradas pero ninguna en ese estado: lo útil es sacarlo.
+  const emptyView =
+    statusFilter === '' ? (
+      <EmptyState
+        title="Todavía no tenés entradas"
+        message="Cuando compres una entrada, la vas a ver acá."
+        action={
+          <Link
+            to="/"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:brightness-110"
+          >
+            Ver próximos partidos
+          </Link>
+        }
+      />
+    ) : (
+      <EmptyState
+        title="No hay entradas con este estado"
+        message={`Ninguna de tus entradas está en «${TICKET_STATUS_LABEL[statusFilter]}».`}
+        action={
+          <Button variant="secondary" size="sm" onClick={() => setStatusFilter('')}>
+            Ver todas
+          </Button>
+        }
+      />
+    )
+
   // El filtro es parte del listado y no del header: si estuviera en el
   // header se vería también en el detalle, donde no afecta lo que se muestra.
   const listView = (
@@ -82,7 +112,7 @@ export default function MyTicketList() {
           {ticketsMapped}
         </div>
       ) : (
-        <p className="text-muted">No hay entradas para mostrar.</p>
+        emptyView
       )}
     </>
   )
