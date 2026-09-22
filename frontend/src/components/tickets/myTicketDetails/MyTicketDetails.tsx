@@ -6,6 +6,7 @@ import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
 import { getMyTicket } from './MyTicketDetails.server'
 import { TICKET_STATUS_LABEL } from '../../../types/ticket'
 import type { Ticket } from '../../../types/ticket'
+import { QRCodeSVG } from 'qrcode.react'
 
 export default function MyTicketDetails() {
   const navigate = useNavigate()
@@ -83,20 +84,35 @@ export default function MyTicketDetails() {
         )}
       </dl>
 
-      {/* El código es el dato que se va a convertir en QR. Mientras la
-          entrada está PENDING todavía no existe: se genera al pagar. */}
+      {/* El QR sólo se muestra en una entrada ACTIVE: en una USED invitaría
+          a escanearla y la validación la rechazaría. En PENDING todavía no
+          hay código: se genera al confirmarse el pago. */}
       <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
         {ticket.code ? (
           <>
             <p className="text-sm font-medium text-navy">Código de acceso</p>
-            {/* break-all evita que el código desborde la tarjeta en celular. */}
-            <p className="mt-1 break-all font-mono text-sm">{ticket.code}</p>
-            {/* La indicación sólo aplica a una entrada válida: en una USED
-               el código queda visible como comprobante, pero ya no sirve
-               para ingresar. */}
             {ticket.status === 'ACTIVE' && (
-              <p className="mt-2 text-xs text-muted">
-                Presentá este código en la entrada de la cancha.
+              <div className="mt-3 flex justify-center">
+                {/* Fondo blanco con margen: el lector necesita una zona
+                    clara alrededor del QR para detectarlo. */}
+                <div className="rounded-lg bg-white p-3">
+                  <QRCodeSVG
+                    value={ticket.code}
+                    size={192}
+                    level="M"
+                    title="Código QR de la entrada"
+                  />
+                </div>
+              </div>
+            )}
+            {/* El texto queda siempre: si el lector falla, se tipea.
+                break-all evita que desborde la tarjeta en celular. */}
+            <p className="mt-3 break-all text-center font-mono text-sm">
+              {ticket.code}
+            </p>
+            {ticket.status === 'ACTIVE' && (
+              <p className="mt-2 text-center text-xs text-muted">
+                Presentá este QR en la entrada de la cancha.
               </p>
             )}
           </>
