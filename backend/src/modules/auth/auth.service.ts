@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../config/prisma';
+import { env } from '../../config/env';
 
 export interface JwtPayload {
   userId: number;
@@ -24,8 +25,8 @@ export const authService = {
       role: user.role.name,
     };
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
-      expiresIn: process.env.JWT_EXPIRES_IN ?? '1d',
+    const token = jwt.sign(payload, env.jwtSecret, {
+      expiresIn: env.jwtExpiresIn ?? '1d',
     } as jwt.SignOptions);
 
     return {
