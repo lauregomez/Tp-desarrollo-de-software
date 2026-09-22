@@ -28,7 +28,8 @@ export default function MyTicketDetails() {
         setIsLoading(false)
       },
       // Sin toast: el bloque de "no encontrada" de abajo ya explica qué pasó.
-      // Acá cae tanto el 404 como el 403 de una entrada de otro usuario.
+      // Acá cae el 404, tanto si la entrada no existe como si es de otro
+      // usuario: el backend responde igual en los dos casos.
       onError: () => setIsLoading(false),
     })
   }, [id, ticketFromState])
@@ -74,12 +75,12 @@ export default function MyTicketDetails() {
         </div>
         {/* Sin pricePaid (vista de staff) no mostramos la línea: formatear
            undefined daría "$ NaN". */}
-       {ticket.pricePaid && (
-         <div>
-           <dt className="inline">Precio pagado: </dt>
-           <dd className="inline">{formatPrice(ticket.pricePaid)}</dd>
-         </div>
-       )}
+        {ticket.pricePaid && (
+          <div>
+            <dt className="inline">Precio pagado: </dt>
+            <dd className="inline">{formatPrice(ticket.pricePaid)}</dd>
+          </div>
+        )}
       </dl>
 
       {/* El código es el dato que se va a convertir en QR. Mientras la
@@ -93,11 +94,11 @@ export default function MyTicketDetails() {
             {/* La indicación sólo aplica a una entrada válida: en una USED
                el código queda visible como comprobante, pero ya no sirve
                para ingresar. */}
-           {ticket.status === 'ACTIVE' && (
-             <p className="mt-2 text-xs text-muted">
-               Presentá este código en la entrada de la cancha.
-             </p>
-           )}
+            {ticket.status === 'ACTIVE' && (
+              <p className="mt-2 text-xs text-muted">
+                Presentá este código en la entrada de la cancha.
+              </p>
+            )}
           </>
         ) : (
           <p className="text-sm text-muted">
