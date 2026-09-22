@@ -4,6 +4,7 @@ import MatchRow from '../matchRow/MatchRow'
 import MatchForm from '../matchForm/MatchForm'
 import PageNotFound from '../../pageNotFound/PageNotFound'
 import Button from '../../shared/button/Button'
+import EmptyState from '../../shared/emptyState/EmptyState'
 import { successToast, errorToast } from '../../../shared/notifications'
 import { getAdminMatches, deleteMatch, changeMatchStatus } from './MatchAdmin.server'
 import { createMatch, updateMatch } from '../matchForm/MatchForm.server'
@@ -142,7 +143,10 @@ export default function MatchAdmin() {
                 </table>
               </div>
             ) : (
-              <p className="text-muted">Todavía no hay partidos cargados.</p>
+              <EmptyState
+                title="Todavía no hay partidos"
+                message="Cargá el primero con el botón «Nuevo partido»."
+              />
             )
           }
         />
