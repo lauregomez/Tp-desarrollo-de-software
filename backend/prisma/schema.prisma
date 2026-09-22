@@ -103,6 +103,7 @@ model Ticket {
   createdAt     DateTime     @default(now()) @map("created_at")
 
   @@index([matchId, status])
+  @@index([mpOrderId])
   @@map("tickets")
 }
 

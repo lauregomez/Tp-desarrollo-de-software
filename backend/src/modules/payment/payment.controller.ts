@@ -171,6 +171,61 @@ export const paymentController = {
       return;
     }
 
+    // El id de la orden se resuelve acá porque lo necesitan tanto el camino
+    // de confirmación como el de liberación.
+    const orderId = order.id;
+
+    if (!orderId) {
+      console.error('[webhook] la orden llegó sin id:', dataId);
+      res.status(200).end();
+      return;
+    }
+
+    const action = notification.action;
+
+    // Un reembolso supone una entrada ya confirmada, con QR emitido y quizás
+    // ya usada en la puerta. Revertirlo no es simétrico a liberar una reserva:
+    // hay que decidir qué pasa con el acceso al partido y con el dinero, y eso
+    // excede al webhook. Queda registrado para revisión manual.
+    if (action === 'order.refunded') {
+      console.error(
+        '[webhook] orden reembolsada, requiere revisión manual:',
+        orderId,
+      );
+      res.status(200).end();
+      return;
+    }
+
+    if (action === 'order.canceled' || action === 'order.expired') {
+      // El action viaja en el body y el body no entra en la firma: antes de
+      // borrar nada se confirma el desenlace contra el estado que devolvió
+      // MercadoPago. Sin esto, reenviar una notificación legítima con el
+      // cuerpo cambiado alcanzaría para voltear una reserva en curso.
+      //
+      // No se compara contra literales exactos porque no está garantizada la
+      // grafía que usa MercadoPago (canceled/cancelled). El prefijo alcanza
+      // para distinguir un final de fracaso de una orden todavía viva
+      // (created, action_required) o ya pagada (processed).
+      const status = (order.status ?? '').toLowerCase();
+      const failed = status.startsWith('cancel') || status.startsWith('expir');
+
+      if (!failed) {
+        console.error(
+          `[webhook] ${action} pero la orden ${orderId} figura en ${order.status}`,
+        );
+        res.status(200).end();
+        return;
+      }
+
+      const released = await ticketService.releaseByOrderId(orderId);
+
+      console.log(
+        `[webhook] orden ${orderId} (${action}): ${released} entradas liberadas`,
+      );
+      res.status(200).end();
+      return;
+    }
+
     // Sólo un pago acreditado habilita las entradas.
     if (order.status !== 'processed' || order.status_detail !== 'accredited') {
       console.log(
@@ -181,9 +236,8 @@ export const paymentController = {
     }
 
     const paymentId = order.transactions?.payments?.[0]?.id;
-    const orderId = order.id;
 
-    if (!paymentId || !orderId) {
+    if (!paymentId) {
       console.error('[webhook] orden acreditada sin id de pago:', dataId);
       res.status(200).end();
       return;

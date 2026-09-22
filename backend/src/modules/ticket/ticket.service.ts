@@ -54,6 +54,12 @@ export type TicketWithRelations = Prisma.TicketGetPayload<{
  * Los tickets con mpOrderId quedan excluidos: ya tienen una orden de pago
  * abierta y borrarlos dejaría al comprador pagando algo que no existe.
  */
+// Ventana extendida para las reservas que ya tienen orden de MercadoPago:
+// el usuario puede estar en el checkout, o el pago puede quedar pendiente
+// un rato. Pasado este plazo se liberan igual, porque si no una compra
+// abandonada dejaría la entrada retenida para siempre.
+const ORDER_RELEASE_MS = 60 * 60 * 1000; // 1 hora
+
 async function releaseExpired(
   tx: Prisma.TransactionClient,
   matchId: number,
@@ -62,8 +68,15 @@ async function releaseExpired(
     where: {
       matchId,
       status: TicketStatus.PENDING,
-      reservedUntil: { lt: new Date() },
-      mpOrderId: null,
+      OR: [
+        // Sin orden: vale el hold normal de 15 minutos.
+        { mpOrderId: null, reservedUntil: { lt: new Date() } },
+        // Con orden: recién una hora después de haberse creado la reserva.
+        {
+          mpOrderId: { not: null },
+          createdAt: { lt: new Date(Date.now() - ORDER_RELEASE_MS) },
+        },
+      ],
     },
   });
   return count;
@@ -283,6 +296,28 @@ export const ticketService = {
       where: { mpOrderId },
       select: { id: true, status: true },
     });
+  },
+
+  /**
+   * Libera las entradas de una orden que no llegó a pagarse.
+   *
+   * Sólo borra las PENDING: una ACTIVE ya tiene el pago acreditado y el QR
+   * emitido, y no se toca aunque la orden figure cancelada.
+   *
+   * Es el mismo criterio de releaseExpired --liberar es borrar la fila-- pero
+   * por orden en vez de por vencimiento: acá se sabe que la orden murió y no
+   * hace falta esperar a que venza el hold.
+   *
+   * El estado va dentro del where del delete y no en una búsqueda previa para
+   * que las dos condiciones se resuelvan en la misma sentencia: si entre medio
+   * se acreditara el pago, esos tickets quedarían ACTIVE y el delete ya no los
+   * alcanzaría.
+   */
+  async releaseByOrderId(mpOrderId: string): Promise<number> {
+    const { count } = await prisma.ticket.deleteMany({
+      where: { mpOrderId, status: TicketStatus.PENDING },
+    });
+    return count;
   },
   
   /**
