@@ -78,7 +78,12 @@ export default function MyTicketDetails() {
            undefined daría "$ NaN". */}
         {ticket.pricePaid && (
           <div>
-            <dt className="inline">Precio pagado: </dt>
+            {/* En PENDING el pago todavía no se confirmó: decir "Precio
+                pagado" sería falso. El monto sí se muestra, porque es lo
+                que va a pagar. */}
+            <dt className="inline">
+              {ticket.status === 'PENDING' ? 'Precio: ' : 'Precio pagado: '}
+            </dt>
             <dd className="inline">{formatPrice(ticket.pricePaid)}</dd>
           </div>
         )}
