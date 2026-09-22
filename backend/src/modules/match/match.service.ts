@@ -8,8 +8,8 @@ const MATCH_DURATION_MINUTES = 50;
 
 function matchInclude() {
   return {
-    homeClub: { select: { id: true, name: true } },
-    awayClub: { select: { id: true, name: true } },
+    homeClub: { select: { id: true, name: true, logoUrl: true } },
+    awayClub: { select: { id: true, name: true, logoUrl: true } },
     court: { select: { id: true, name: true, capacity: true } },
     _count: {
       select: {
