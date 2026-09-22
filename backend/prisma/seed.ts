@@ -37,9 +37,12 @@ async function seedUsers() {
   const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
 
   const users = [
-    { name: 'Carlos', lastName: 'Méndez', email: 'admin@arf.com', roleId: 1 },
-    { name: 'Rodrigo', lastName: 'Sánchez', email: 'operador@arf.com', roleId: 2 },
-    { name: 'Juan', lastName: 'García', email: 'usuario@arf.com', roleId: 3 },
+    { name: 'Laure', lastName: 'Gomez', email: 'laure@arf.com', roleId: 1 },
+    { name: 'Morro', lastName: 'Garcia', email: 'morro@arf.com', roleId: 1 },
+    { name: 'Santiago', lastName: 'Poy', email: 'poy@arf.com', roleId: 1 },
+    { name: 'Roman', lastName: 'Gaido', email: 'roman@arf.com', roleId: 2 },
+    { name: 'Jaste', lastName: 'Santos', email: 'jaste@arf.com', roleId: 3 },
+    { name: 'Jager', lastName: 'Mateo', email: 'jager@arf.com', roleId: 3 },
   ];
 
   const created = [];
@@ -233,8 +236,9 @@ async function main() {
 
   const matchIds = await seedMatches(clubIds, courtIds);
 
-  // Las entradas van al usuario común: admin y operador no compran.
-  const buyer = users.find((u) => u.email === 'usuario@arf.com');
+  // Jaste recibe las entradas de ejemplo; Jager queda sin entradas para
+  // probar el estado vacío de "Mis entradas".
+  const buyer = users.find((u) => u.email === 'jaste@arf.com');
   if (buyer) {
     await seedTickets(buyer.id, matchIds);
   }
