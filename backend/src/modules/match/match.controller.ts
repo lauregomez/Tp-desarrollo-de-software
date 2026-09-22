@@ -6,15 +6,7 @@ import {
   toPublicMatch,
   toAdminMatch,
 } from './match.service';
-
-
-
-const ALLOWED_TRANSITIONS: Record<MatchStatus, MatchStatus[]> = {
-  DRAFT: [MatchStatus.PUBLISHED, MatchStatus.CANCELLED],
-  PUBLISHED: [MatchStatus.FINISHED, MatchStatus.CANCELLED],
-  FINISHED: [],
-  CANCELLED: [],
-};
+import { isValidTransition } from './match.types';
 
 
 
@@ -362,7 +354,7 @@ export const matchController = {
       return;
     }
 
-    if (!ALLOWED_TRANSITIONS[match.status].includes(status as MatchStatus)) {
+    if (!isValidTransition(match.status, status as MatchStatus)) {
       res.status(409).json({
         message: `No se puede pasar un partido de ${match.status} a ${status}`,
       });
