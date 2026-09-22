@@ -69,6 +69,14 @@ export default function CourtDetails({ clubs }: CourtDetailsProps) {
         <Button variant="secondary" onClick={() => navigate('/canchas')}>
           Volver
         </Button>
+        {/* Mandamos la cancha en el state para que el formulario
+           se precargue sin pedirla de nuevo. Mismo criterio que ClubDetails. */}
+       <Button
+         variant="primary"
+         onClick={() => navigate(`/canchas/editar/${court.id}`, { state: court })}
+       >
+         Editar
+       </Button>
       </div>
     </article>
   )

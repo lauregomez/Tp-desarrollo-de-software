@@ -10,11 +10,11 @@ import {
   getMatch,
 } from './MatchForm.server'
 import { CATEGORY_LABEL } from '../../../types/match'
+import type { Court } from '../../../types/court'
 import type {
   AdminMatch,
   Category,
   ClubSummary,
-  CourtSummary,
   CreateMatchDto,
 } from '../../../types/match'
 
@@ -71,7 +71,7 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
 
   // Opciones de los desplegables: se piden a la API al montar.
   const [clubs, setClubs] = useState<ClubSummary[]>([])
-  const [courts, setCourts] = useState<CourtSummary[]>([])
+  const [courts, setCourts] = useState<Court[]>([])
 
   useEffect(() => {
     getClubOptions({
@@ -257,7 +257,7 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
             <option value="">Elegí una cancha</option>
             {courts.map((court) => (
               <option key={court.id} value={court.id}>
-                {court.name}
+                {court.name} — {court.address}
               </option>
             ))}
           </select>

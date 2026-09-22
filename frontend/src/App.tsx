@@ -43,7 +43,6 @@ export default function App() {
             <Route path="/clubes/*" element={<ClubList />} />
             <Route path="/canchas/*" element={<CourtList />} />
             <Route path="/admin/partidos/*" element={<MatchAdmin />} />
-
           </Route>
                     {/* Cualquier usuario logueado ve sus propias entradas: este
               Protected no pasa roles, así que sólo exige sesión. El
