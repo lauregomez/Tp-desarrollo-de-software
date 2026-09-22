@@ -61,25 +61,65 @@ async function seedUsers() {
 }
 
 async function seedClubs() {
-  const names = [
-    'Velocidad y Resistencia',
-    'Nueva Defensores',
-    'Sportivo Patria',
-    'Los Andes',
+  // Clubes reales de fútsal de Rosario, con escudo y año de fundación.
+  // Los escudos son URLs externas (rosariofutbol.com): si dejan de responder,
+  // el front muestra las iniciales del club como fallback.
+  // foundedYear en null: la fuente no informa el año de ese club.
+  const LOGO_BASE = 'https://rosariofutbol.com/imagenes/archivos/deportesequipos';
+
+  const clubs = [
+    { name: 'Club Velocidad y Resistencia', foundedYear: 1923, logo: 260 },
+    { name: 'Club Atlético Rosario Central', foundedYear: 1889, logo: 156 },
+    { name: "Club Atlético Newell's Old Boys", foundedYear: 1903, logo: 157 },
+    { name: 'Club Atlético Provincial', foundedYear: 1903, logo: 140 },
+    { name: 'Club Atlético Horizonte', foundedYear: 1928, logo: 137 },
+    { name: 'Unión Sionista Argentina de Rosario', foundedYear: 1983, logo: 145 },
+    { name: 'Náutico Sportivo Avellaneda', foundedYear: 1931, logo: 220 },
+    { name: 'Club Social Argentino Sirio', foundedYear: 1946, logo: 139 },
+    { name: 'Sociedad Tiro Suizo Rosario', foundedYear: 1889, logo: 224 },
+    { name: 'Club Atlético Banco Nación', foundedYear: 1943, logo: 237 },
+    { name: 'Remeros Alberdi', foundedYear: 1919, logo: 221 },
+    { name: 'Echesortu Fútbol Club', foundedYear: 1933, logo: 143 },
+    { name: 'Colegio Marista Rosario', foundedYear: null, logo: 251 },
+    { name: 'Rosario Rowing Club', foundedYear: 1887, logo: 142 },
+    { name: 'Club Atlético Sagrado Corazón', foundedYear: 1939, logo: 222 },
+    { name: 'Jockey Club Rosario', foundedYear: 1900, logo: 135 },
+    { name: 'Club Residentes Parquefield', foundedYear: 1968, logo: 226 },
+    { name: 'Club de Regatas Rosario', foundedYear: 1917, logo: 138 },
+    { name: 'Club Universitario', foundedYear: 1924, logo: 254 },
+    { name: 'Club Social y Deportivo El Luchador', foundedYear: 1932, logo: 136 },
+    { name: 'Universidad Nacional de Rosario', foundedYear: null, logo: 141 },
+    { name: 'Club Social y Deportivo Unión Americana', foundedYear: 1941, logo: 144 },
+    { name: 'Club Atlético María Madre de La Lata', foundedYear: 2016, logo: 246 },
+    { name: 'Club Atlético Talleres Rosario Puerto Belgrano', foundedYear: 1920, logo: 151 },
+    { name: 'Club Social y Deportivo Nueva Aurora', foundedYear: 1940, logo: 217 },
+    { name: 'Club Atlético Libertad', foundedYear: 1920, logo: 231 },
+    { name: 'Club Social y Deportivo Federal', foundedYear: 1943, logo: 235 },
+    { name: 'Club Deportivo Unión Central', foundedYear: null, logo: 236 },
+    { name: 'Club Social y Deportivo Río Negro', foundedYear: 1939, logo: 107 },
+    { name: 'Club Deportivo y Social Lux', foundedYear: 1940, logo: 240 },
+    { name: 'Club Atlético Central Córdoba', foundedYear: 1906, logo: 225 },
+    { name: 'Club Atlético Social Deportivo y Cultural 1º de Mayo', foundedYear: 1979, logo: 147 },
+    { name: 'Club Teléfonos Rosario', foundedYear: 1932, logo: 229 },
+    { name: 'Club de Regatas Rosario B', foundedYear: 1917, logo: 138 },
+    { name: 'Náutico Sportivo Avellaneda B', foundedYear: 1931, logo: 220 },
   ];
 
-  const clubs = await Promise.all(
-    names.map((name) =>
-      prisma.club.upsert({
+  const created = await Promise.all(
+    clubs.map(({ name, foundedYear, logo }) => {
+      const data = { foundedYear, logoUrl: `${LOGO_BASE}/${logo}_imagen.png` };
+      return prisma.club.upsert({
         where: { name },
-        update: {},
-        create: { name },
-      }),
-    ),
+        // update también carga logo y año: así, correr el seed sobre una
+        // base existente completa los clubes que ya estaban.
+        update: data,
+        create: { name, ...data },
+      });
+    }),
   );
 
-  console.log(`✓ Clubes: ${clubs.length}`);
-  return clubs;
+  console.log(`✓ Clubes: ${created.length}`);
+  return created;
 }
 
 async function seedCourts(clubIds: number[]) {
