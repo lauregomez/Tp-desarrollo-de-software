@@ -7,6 +7,14 @@ export interface ClubSummary {
   name: string
 }
 
+// El club tal como viene dentro de un partido: matchInclude del backend
+// también trae el escudo. Va aparte de ClubSummary porque TicketMatch usa
+// ClubSummary y las entradas no traen logoUrl.
+// null: el escudo es opcional al crear un club.
+export interface MatchClub extends ClubSummary {
+  logoUrl: string | null
+}
+
 export interface CourtSummary {
   id: number
   name: string
@@ -17,8 +25,8 @@ export interface PublicMatch {
   startsAt: string
   price: string
   category: Category
-  homeClub: ClubSummary
-  awayClub: ClubSummary
+  homeClub: MatchClub
+  awayClub: MatchClub
   court: CourtSummary
   status: MatchStatus
   soldOut: boolean
@@ -43,8 +51,8 @@ export interface AdminMatch {
   homeClubId: number
   awayClubId: number
   courtId: number
-  homeClub: ClubSummary
-  awayClub: ClubSummary
+  homeClub: MatchClub
+  awayClub: MatchClub
   court: CourtSummary
   capacity: number
   sold: number
