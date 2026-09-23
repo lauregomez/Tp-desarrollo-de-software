@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { userService } from './user.service';
 import { AuthRequest } from '../../middlewares/auth.types';
+import { canDeleteUser } from './user.types';
 
 export const userController = {
   async getAll(req: Request, res: Response): Promise<void> {
@@ -147,7 +148,7 @@ export const userController = {
     // El front esconde el botón, pero eso es UX: la regla vive acá,
     // igual que las rutas protegidas por authorize.
     const { user } = req as AuthRequest;
-    if (user?.userId === id) {
+    if (user && !canDeleteUser(id, user.userId)) {
       res.status(409).json({ message: 'No podés eliminar tu propio usuario' });
       return;
     }

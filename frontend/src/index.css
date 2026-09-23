@@ -11,3 +11,30 @@
 
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
+@keyframes club-strip {
+  from {
+    transform: translateX(0);
+  }
+  /* -50% es la mitad exacta del contenido duplicado: el punto donde
+     el segundo grupo ocupa la posición inicial del primero. */
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-club-strip {
+  animation: club-strip 40s linear infinite;
+}
+
+/* Pausa al pasar el mouse, para poder mirar un escudo en particular. */
+.group:hover .animate-club-strip {
+  animation-play-state: paused;
+}
+
+/* Respeta la preferencia del sistema de quien tenga las animaciones
+   desactivadas: la franja queda quieta en vez de moverse. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-club-strip {
+    animation: none;
+  }
+}

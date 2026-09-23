@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-
 import MatchCard from '../matchCard/MatchCard'
 import { errorToast } from '../../../shared/notifications'
 import { getMatches } from './MatchList.server'
 import Hero from '../../home/hero/Hero'
 import EmptyState from '../../shared/emptyState/EmptyState'
 import type { PublicMatch } from '../../../types/match'
+import ClubStrip from '../../home/clubStrip/ClubStrip'
 
 export default function MatchList() {
   const [matches, setMatches] = useState<PublicMatch[]>([])
@@ -62,6 +62,8 @@ export default function MatchList() {
          />
        )}
        </section>
-     </>
+
+       <ClubStrip />
+    </>
   )
 }
