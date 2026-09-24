@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router'
+import { useLocation, useNavigate, Link } from 'react-router'
 import { useAuth } from '../../../context/useAuth'
 import { ApiError } from '../../../lib/api'
 import { initialLoginData, initialLoginErrors } from './Login.data'
 import { MIN_PASSWORD_LENGTH } from './Login.const'
+
 
 export default function Login() {
   // Un solo objeto para todo el formulario en vez de un useState por campo:
@@ -170,6 +171,13 @@ export default function Login() {
           {isSubmitting ? 'Ingresando...' : 'Ingresar'}
         </button>
       </form>
+        <p className="mt-4 text-center text-sm text-muted">
+          ¿No tenés cuenta?{' '}
+          <Link to="/registro" className="text-primary hover:underline">
+           Creá una
+          </Link>
+        </p>
+    
     </div>
   )
 }
