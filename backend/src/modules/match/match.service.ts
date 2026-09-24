@@ -49,9 +49,12 @@ export const matchService = {
     // se combinan sin problema.
     const conditions: Prisma.MatchWhereInput[] = [];
 
-    if (filters.clubId) {
+    if (filters.clubIds?.length) {
       conditions.push({
-        OR: [{ homeClubId: filters.clubId }, { awayClubId: filters.clubId }],
+        OR: [
+          { homeClubId: { in: filters.clubIds } },
+          { awayClubId: { in: filters.clubIds } },
+        ],
       });
     }
 
@@ -67,9 +70,9 @@ export const matchService = {
 
     return prisma.match.findMany({
       where: {
-        status: filters.status,
+        status: filters.statuses?.length ? { in: filters.statuses } : undefined,
         category: filters.category,
-        courtId: filters.courtId,
+        courtId: filters.courtIds?.length ? { in: filters.courtIds } : undefined,
         ...((filters.from || filters.to) && {
           startsAt: {
             ...(filters.from && { gte: filters.from }),
