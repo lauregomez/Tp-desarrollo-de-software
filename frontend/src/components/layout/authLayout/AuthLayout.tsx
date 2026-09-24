@@ -1,13 +1,15 @@
-import { Outlet } from 'react-router'
+import { Link, Outlet } from 'react-router'
+import arfLogo from '../../../assets/arf-logo.png'
 
 export default function AuthLayout() {
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       <header className="bg-navy py-4">
-        <div className="flex items-center justify-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-brand" />
+        {/* Permite volver al home sin iniciar sesión, igual que en el Header. */}
+        <Link to="/" className="flex items-center justify-center gap-2">
+          <img src={arfLogo} alt="" className="h-8 w-8 object-contain" />
           <span className="text-lg font-bold text-white">Rosarina Futsal</span>
-        </div>
+        </Link>
       </header>
 
       <main className="flex flex-1 items-center justify-center px-4 py-8">

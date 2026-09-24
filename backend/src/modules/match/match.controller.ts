@@ -6,17 +6,7 @@ import {
   toPublicMatch,
   toAdminMatch,
 } from './match.service';
-
-
-
-const ALLOWED_TRANSITIONS: Record<MatchStatus, MatchStatus[]> = {
-  DRAFT: [MatchStatus.PUBLISHED, MatchStatus.CANCELLED],
-  PUBLISHED: [MatchStatus.FINISHED, MatchStatus.CANCELLED],
-  FINISHED: [],
-  CANCELLED: [],
-};
-
-
+import { isValidTransition } from './match.types';
 
 function isAdmin(req: AuthRequest): boolean {
   return req.user?.role === 'ADMIN';
@@ -27,7 +17,6 @@ export const matchController = {
     const admin = isAdmin(req);
     const { status, category, clubId, from, to } = req.query;
 
-    
     let statusFilter: MatchStatus | undefined = MatchStatus.PUBLISHED;
 
     if (admin) {
@@ -108,7 +97,6 @@ export const matchController = {
       return;
     }
 
-    
     if (!isAdmin(req) && match.status !== MatchStatus.PUBLISHED) {
       res.status(404).json({ message: 'Partido no encontrado' });
       return;
@@ -161,7 +149,6 @@ export const matchController = {
       return;
     }
 
-    
     if (capacity !== undefined && capacity !== null) {
       if (!Number.isInteger(capacity) || capacity <= 0) {
         res.status(400).json({ message: 'La capacidad debe ser un número entero positivo' });
@@ -184,6 +171,19 @@ export const matchController = {
     const conflict = await matchService.findCourtConflict(courtId, date);
     if (conflict) {
       res.status(409).json({ message: 'Ya hay un partido programado en esa cancha en ese horario' });
+      return;
+    }
+
+    const clubConflict = await matchService.findClubDayConflict({
+      homeClubId,
+      awayClubId,
+      category: category as Category,
+      startsAt: date,
+    });
+    if (clubConflict) {
+      res.status(409).json({
+        message: 'Uno de los clubes ya tiene un partido de esa categoría ese día',
+      });
       return;
     }
 
@@ -223,7 +223,6 @@ export const matchController = {
     const { startsAt, price, category, capacity, homeClubId, awayClubId, courtId } = req.body;
     const hasTickets = current._count.tickets > 0;
 
-    
     if (hasTickets && (price !== undefined || courtId !== undefined)) {
       res.status(409).json({
         message: 'No se puede cambiar el precio ni la cancha de un partido con entradas vendidas',
@@ -315,6 +314,28 @@ export const matchController = {
       }
     }
 
+    // Solo se revisa si cambió algo que afecte la regla: fecha, categoría o clubes.
+    if (
+      date !== undefined ||
+      category !== undefined ||
+      homeClubId !== undefined ||
+      awayClubId !== undefined
+    ) {
+      const clubConflict = await matchService.findClubDayConflict({
+        homeClubId: finalHomeClubId,
+        awayClubId: finalAwayClubId,
+        category: (category as Category | undefined) ?? current.category,
+        startsAt: date ?? current.startsAt,
+        excludeId: id,
+      });
+      if (clubConflict) {
+        res.status(409).json({
+          message: 'Uno de los clubes ya tiene un partido de esa categoría ese día',
+        });
+        return;
+      }
+    }
+
     try {
       const match = await matchService.update(id, {
         ...(date !== undefined && { startsAt: date }),
@@ -339,7 +360,6 @@ export const matchController = {
     }
   },
 
-  
   async changeStatus(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
 
@@ -362,7 +382,7 @@ export const matchController = {
       return;
     }
 
-    if (!ALLOWED_TRANSITIONS[match.status].includes(status as MatchStatus)) {
+    if (!isValidTransition(match.status, status as MatchStatus)) {
       res.status(409).json({
         message: `No se puede pasar un partido de ${match.status} a ${status}`,
       });
@@ -388,7 +408,6 @@ export const matchController = {
       return;
     }
 
-    
     if (match.status !== MatchStatus.DRAFT) {
       res.status(409).json({
         message: 'Sólo se pueden eliminar partidos en estado borrador',

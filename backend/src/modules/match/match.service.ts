@@ -1,15 +1,28 @@
 import { prisma } from '../../config/prisma';
-import { MatchStatus, TicketStatus } from '@prisma/client';
+import { Category, MatchStatus, TicketStatus } from '@prisma/client';
 import { CreateMatchDto, UpdateMatchDto, MatchFilters } from './match.types';
-
 
 const MATCH_DURATION_MINUTES = 50;
 
+// Argentina es UTC-3 todo el año (no tiene horario de verano desde 2009).
+const ARGENTINA_OFFSET_MS = 3 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Las fechas se guardan en UTC: un partido a las 22 hs de Rosario ya es el
+// día siguiente en UTC. Por eso "el mismo día" se calcula en hora argentina.
+function argentinaDayRange(date: Date) {
+  const local = new Date(date.getTime() - ARGENTINA_OFFSET_MS);
+  const start = new Date(
+    Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) +
+      ARGENTINA_OFFSET_MS,
+  );
+  return { start, end: new Date(start.getTime() + DAY_MS) };
+}
 
 function matchInclude() {
   return {
-    homeClub: { select: { id: true, name: true } },
-    awayClub: { select: { id: true, name: true } },
+    homeClub: { select: { id: true, name: true, logoUrl: true } },
+    awayClub: { select: { id: true, name: true, logoUrl: true } },
     court: { select: { id: true, name: true, capacity: true } },
     _count: {
       select: {
@@ -76,7 +89,6 @@ export const matchService = {
     return prisma.match.delete({ where: { id } });
   },
 
-  
   async findCourtCapacity(courtId: number) {
     const court = await prisma.court.findUnique({
       where: { id: courtId },
@@ -85,7 +97,6 @@ export const matchService = {
     return court ? court.capacity : null;
   },
 
-  
   async findCourtConflict(courtId: number, startsAt: Date, excludeId?: number) {
     const durationMs = MATCH_DURATION_MINUTES * 60 * 1000;
 
@@ -102,15 +113,36 @@ export const matchService = {
       select: { id: true, startsAt: true },
     });
   },
+
+  async findClubDayConflict(params: {
+    homeClubId: number;
+    awayClubId: number;
+    category: Category;
+    startsAt: Date;
+    excludeId?: number;
+  }) {
+    const { start, end } = argentinaDayRange(params.startsAt);
+    const clubIds = [params.homeClubId, params.awayClubId];
+
+    return prisma.match.findFirst({
+      where: {
+        category: params.category,
+        status: { not: MatchStatus.CANCELLED },
+        ...(params.excludeId && { id: { not: params.excludeId } }),
+        startsAt: { gte: start, lt: end },
+        OR: [{ homeClubId: { in: clubIds } }, { awayClubId: { in: clubIds } }],
+      },
+      select: { id: true },
+    });
+  },
+
 };
 
 type MatchWithRelations = NonNullable<Awaited<ReturnType<typeof matchService.findById>>>;
 
-
 export function resolveCapacity(match: MatchWithRelations): number {
   return match.capacity ?? match.court.capacity;
 }
-
 
 export function toPublicMatch(match: MatchWithRelations) {
   const available = resolveCapacity(match) - match._count.tickets;
@@ -122,7 +154,6 @@ export function toPublicMatch(match: MatchWithRelations) {
     soldOut: available <= 0,
   };
 }
-
 
 export function toAdminMatch(match: MatchWithRelations) {
   const capacity = resolveCapacity(match);

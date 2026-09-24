@@ -5,8 +5,8 @@ import type {
   CreateMatchDto,
   UpdateMatchDto,
   ClubSummary,
-  CourtSummary,
 } from '../../../types/match'
+import type { Court } from '../../../types/court'
 
 const RESOURCE = '/matches'
 
@@ -19,8 +19,11 @@ export const getClubOptions = ({ onSuccess, onError }: Callbacks<ClubSummary[]>)
     .catch(onError)
 }
 
-export const getCourtOptions = ({ onSuccess, onError }: Callbacks<CourtSummary[]>) => {
-  apiFetch<CourtSummary[]>('/courts')
+// GET /api/courts devuelve la cancha completa (con address), no el resumen
+// { id, name } que viaja dentro de un partido. Se tipa como Court para poder
+// mostrar la dirección y distinguir canchas con el mismo nombre.
+export const getCourtOptions = ({ onSuccess, onError }: Callbacks<Court[]>) => {
+  apiFetch<Court[]>('/courts')
     .then(onSuccess)
     .catch(onError)
 }

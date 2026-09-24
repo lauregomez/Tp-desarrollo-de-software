@@ -22,7 +22,9 @@ export interface TicketMatch {
 }
 
 // Una entrada del usuario logueado (GET /api/tickets/me y /api/tickets/:id).
-// El backend oculta el usuario: son siempre las entradas de quien pregunta.
+// No trae el objeto user anidado (nombre, email): el backend lo saca con
+// toOwnerTicket porque son siempre las entradas de quien pregunta. El
+// userId sí viaja, como cualquier otra clave foránea.
 export interface Ticket {
   id: number
   // El código del QR se genera al confirmarse el pago: mientras la entrada
@@ -30,10 +32,10 @@ export interface Ticket {
   code: string | null
   status: TicketStatus
   // Decimal de Prisma: viaja como string para no perder precisión.
-   // Opcional porque el backend usa dos proyecciones: el dueño recibe el
-   // precio, y un ADMIN u OPERATOR que mira una entrada ajena no (los
-   // datos de pago no le competen). Ver toOperatorTicket en el backend.
-   pricePaid?: string
+  // Opcional porque el backend usa dos proyecciones: el dueño recibe el
+  // precio, y un ADMIN u OPERATOR que mira una entrada ajena no (los
+  // datos de pago no le competen). Ver toOperatorTicket en el backend.
+  pricePaid?: string
   // Vencimiento de la reserva de 15 minutos. Sólo aplica a PENDING.
   reservedUntil: string | null
   createdAt: string

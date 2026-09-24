@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useLocation, useNavigate, useParams } from 'react-router'
+import { useAuth } from '../../../context/useAuth'
 
 import Button from '../../shared/button/Button'
 import { getMatchById } from './MatchDetails.server'
+import ClubLogo from '../../shared/clubLogo/ClubLogo'
 import { CATEGORY_LABEL } from '../../../types/match'
 import type { PublicMatch } from '../../../types/match'
 import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
 
 export default function MatchDetails() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuth()
   const { id } = useParams<{ id: string }>()
 
   const [match, setMatch] = useState<PublicMatch | null>(null)
@@ -33,6 +37,16 @@ export default function MatchDetails() {
       onError: () => setIsLoading(false),
     })
   }, [id])
+
+  const handleBuy = () => {
+    // Mismo mecanismo que Protected: guardamos la ruta actual en state.from
+    // para que Login nos devuelva a este partido después de ingresar.
+    if (!user) {
+      navigate('/login', { state: { from: location } })
+      return
+    }
+    // La compra todavía no está implementada (CUU Comprar entrada).
+  }
 
   if (isLoading) {
     return <p className="text-muted">Cargando partido…</p>
@@ -60,9 +74,29 @@ export default function MatchDetails() {
         <span>{formatShortDate(match.startsAt)}</span>
       </header>
 
-      <h2 className="mt-4 text-center text-2xl font-bold text-navy">
-        {match.homeClub.name} vs {match.awayClub.name}
-      </h2>
+      {/* items-start: si un nombre ocupa dos líneas, los escudos
+          quedan igual a la misma altura. */}
+      <div className="mt-6 flex items-start justify-center gap-6">
+        <div className="flex flex-1 flex-col items-center gap-2 text-center">
+          <ClubLogo
+            name={match.homeClub.name}
+            logoUrl={match.homeClub.logoUrl}
+            size="lg"
+          />
+          <span className="text-lg font-bold text-navy">{match.homeClub.name}</span>
+        </div>
+
+        <span className="mt-6 font-semibold text-muted">vs</span>
+
+        <div className="flex flex-1 flex-col items-center gap-2 text-center">
+          <ClubLogo
+            name={match.awayClub.name}
+            logoUrl={match.awayClub.logoUrl}
+            size="lg"
+          />
+          <span className="text-lg font-bold text-navy">{match.awayClub.name}</span>
+        </div>
+      </div>
 
       <dl className="mt-6 space-y-2 border-l-2 border-slate-200 pl-4 text-sm">
         <div>
@@ -85,7 +119,7 @@ export default function MatchDetails() {
         </Button>
         {/* La compra todavía no está implementada: el botón queda
             deshabilitado si el partido está agotado. */}
-        <Button variant="primary" disabled={match.soldOut}>
+        <Button variant="primary" disabled={match.soldOut} onClick={handleBuy}>
           {match.soldOut ? 'Agotado' : 'Comprar entrada'}
         </Button>
       </div>

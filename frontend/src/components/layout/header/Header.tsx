@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router";
 import { useAuth } from "../../../context/useAuth";
+import arfLogo from "../../../assets/arf-logo.png";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   isActive
@@ -21,7 +22,7 @@ export default function Header() {
     <header className="bg-navy">
       <div className="mx-auto flex max-w-app items-center justify-between px-4 py-3 md:px-6 md:py-4">
         <NavLink to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-brand" />
+          <img src={arfLogo} alt="" className="h-8 w-8 object-contain" />
           <span className="text-lg font-bold text-white">Rosarina Futsal</span>
         </NavLink>
 
@@ -40,13 +41,16 @@ export default function Header() {
           {/* Esconder el link es UX, no seguridad: el backend rechaza
               igual a quien no sea ADMIN. Evita mostrar una opción
               que terminaría en un error. */}
-            {user?.role === "ADMIN" && (
+          {user?.role === "ADMIN" && (
             <>
               <NavLink to="/clubes" className={linkClass}>
                 Clubes
               </NavLink>
               <NavLink to="/canchas" className={linkClass}>
                 Canchas
+              </NavLink>
+              <NavLink to="/admin/usuarios" className={linkClass}>
+                Usuarios
               </NavLink>
               <NavLink to="/admin/partidos" className={linkClass}>
                 Gestión
