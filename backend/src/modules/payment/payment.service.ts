@@ -58,6 +58,10 @@ function parseSignatureHeader(xSignature: string): { ts?: string; v1?: string } 
  *
  * Si dataId o xRequestId no vienen se omite el segmento entero: dejarlo
  * vacío ("id:;") daría un hash distinto al que calculó MercadoPago.
+ *
+ * El dataId va en minúsculas porque así lo firma MercadoPago: los ids de
+ * la Orders API son alfanuméricos en mayúsculas (ORDTST01...), y firmarlos
+ * tal cual llegan da un hash distinto. Con ids numéricos no cambia nada.
  */
 function buildManifest(
   dataId: string | undefined,
@@ -65,7 +69,7 @@ function buildManifest(
   ts: string,
 ): string {
   const parts: string[] = [];
-  if (dataId) parts.push(`id:${dataId}`);
+  if (dataId) parts.push(`id:${dataId.toLowerCase()}`);
   if (xRequestId) parts.push(`request-id:${xRequestId}`);
   parts.push(`ts:${ts}`);
   return parts.join(';') + ';';

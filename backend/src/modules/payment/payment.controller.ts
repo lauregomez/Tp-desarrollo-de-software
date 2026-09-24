@@ -124,6 +124,7 @@ export const paymentController = {
   async handleWebhook(req: Request, res: Response): Promise<void> {
     // La firma se verifica antes que nada: hasta confirmar el origen, nada
     // de lo que llega es confiable.
+        // TEMPORAL: diagnóstico de la firma. Borrar antes de commitear.
     const dataId = req.query['data.id'];
     const check = paymentService.verifyWebhookSignature({
       xSignature: req.headers['x-signature'],
