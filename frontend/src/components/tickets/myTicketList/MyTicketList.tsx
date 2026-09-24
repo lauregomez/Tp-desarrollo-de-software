@@ -6,7 +6,7 @@ import MyTicketItem from '../myTicketItem/MyTicketItem'
 import PageNotFound from '../../pageNotFound/PageNotFound'
 import { errorToast } from '../../../shared/notifications'
 import { getMyTickets } from './MyTicketList.server'
-import { TICKET_STATUS_LABEL } from '../../../types/ticket'
+import { SOLD_STATUSES, TICKET_STATUS_LABEL } from '../../../types/ticket'
 import type { Ticket, TicketStatus } from '../../../types/ticket'
 import Button from '../../shared/button/Button'
 import EmptyState from '../../shared/emptyState/EmptyState'
@@ -95,11 +95,11 @@ export default function MyTicketList() {
           className="rounded-lg border border-slate-300 px-3 py-2"
         >
           <option value="">Todas</option>
-          {/* Generamos las opciones desde TICKET_STATUS_LABEL: si el
-              backend agrega un estado, aparece solo y con su texto. */}
-          {Object.entries(TICKET_STATUS_LABEL).map(([value, label]) => (
+          {/* Sólo los estados pagos: las PENDING son intentos de compra
+              y el backend no las devuelve en "Mis entradas". */}
+          {SOLD_STATUSES.map((value) => (
             <option key={value} value={value}>
-              {label}
+              {TICKET_STATUS_LABEL[value]}
             </option>
           ))}
         </select>

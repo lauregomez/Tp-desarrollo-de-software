@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthRequest, AuthUser } from './auth.types';
+import { env } from '../config/env';
 
 export function optionalAuthenticate(
   req: AuthRequest,
@@ -17,7 +18,7 @@ export function optionalAuthenticate(
   try {
     const payload = jwt.verify(
       header.slice(7),
-      process.env.JWT_SECRET as string,
+    env.jwtSecret as string,
     ) as AuthUser;
     req.user = payload;
   } catch {

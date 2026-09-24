@@ -38,7 +38,9 @@ export interface TicketMatch {
 // userId sí viaja, como cualquier otra clave foránea.
 export interface Ticket {
   id: number
-  // El código del QR se genera al confirmarse el pago: mientras la entrada
+    // Código alfanumérico que el asistente le dicta al operador en la
+  // cancha. Se genera al confirmarse el pago: mientras la entrada está
+  // PENDING todavía no existe, por eso puede ser null.
   // está PENDING todavía no existe, por eso puede ser null.
   code: string | null
   status: TicketStatus
@@ -47,8 +49,6 @@ export interface Ticket {
   // precio, y un ADMIN u OPERATOR que mira una entrada ajena no (los
   // datos de pago no le competen). Ver toOperatorTicket en el backend.
   pricePaid?: string
-  // Vencimiento de la reserva de 15 minutos. Sólo aplica a PENDING.
-  reservedUntil: string | null
   createdAt: string
   matchId: number
   userId: number
@@ -62,3 +62,8 @@ export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = {
   ACTIVE: 'Activa',
   USED: 'Usada',
 }
+
+// Estados que el usuario puede ver en "Mis entradas": sólo las pagas.
+// Espejo de SOLD_STATUSES del backend, que rechaza con 400 cualquier
+// otro estado en GET /api/tickets/me.
+export const SOLD_STATUSES: TicketStatus[] = ['ACTIVE', 'USED']

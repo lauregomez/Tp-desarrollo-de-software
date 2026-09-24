@@ -38,14 +38,6 @@ export default function MyTicketItem({ ticket }: MyTicketItemProps) {
         <p className="text-muted">Pagaste: {formatPrice(ticket.pricePaid)}</p>
       )}
 
-      {/* Sólo las reservas sin pagar tienen vencimiento: mostrarlo en una
-          entrada ACTIVE o USED confundiría al usuario. */}
-      {ticket.status === 'PENDING' && ticket.reservedUntil && (
-        <p className="text-sm text-amber-700">
-          Reserva válida hasta las {formatTime(ticket.reservedUntil)} hs
-        </p>
-      )}
-
       <div className="flex flex-wrap gap-2">
         {/* Mandamos la entrada en el state: el detalle la muestra al
             instante sin volver a pedirla al servidor. */}

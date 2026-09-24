@@ -1,4 +1,6 @@
 import { Prisma, Ticket, TicketStatus } from '@prisma/client';
+export const SOLD_STATUSES: TicketStatus[] = [TicketStatus.ACTIVE, TicketStatus.USED];
+
 
 export type { Ticket, TicketStatus };
 
@@ -12,11 +14,10 @@ export type UpdateTicketDto = Prisma.TicketUncheckedUpdateInput;
  * y no queden números mágicos repetidos por el código.
  */
 export const MAX_TICKETS_PER_USER_PER_MATCH = 5;
-export const HOLD_MINUTES = 15;
 
 /**
  * Intención de compra: no es una fila de la tabla tickets.
- * El service la traduce en N tickets independientes (N QR distintos).
+ * El service la traduce en N tickets independientes (N códigos distintos).
  */
 export type ReserveTicketDto = {
   userId: number;
@@ -27,7 +28,7 @@ export type ReserveTicketDto = {
 export type TicketFilters = {
   userId?: number;
   matchId?: number;
-  status?: TicketStatus;
+status?: TicketStatus | TicketStatus[];
 };
 
 /**

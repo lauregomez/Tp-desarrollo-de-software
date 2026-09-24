@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthRequest, AuthUser } from './auth.types';
+import { env } from '../config/env';
 
 export function authenticate(
   req: AuthRequest,
@@ -19,7 +20,7 @@ export function authenticate(
   try {
     const payload = jwt.verify(
       token,
-      process.env.JWT_SECRET as string,
+      env.jwtSecret as string,
     ) as AuthUser;
 
     req.user = payload;

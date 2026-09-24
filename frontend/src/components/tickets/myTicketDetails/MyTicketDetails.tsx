@@ -6,7 +6,6 @@ import { formatPrice, formatShortDate, formatTime, courtName, clubName } from '.
 import { getMyTicket } from './MyTicketDetails.server'
 import { TICKET_STATUS_LABEL } from '../../../types/ticket'
 import type { Ticket } from '../../../types/ticket'
-import { QRCodeSVG } from 'qrcode.react'
 
 export default function MyTicketDetails() {
   const navigate = useNavigate()
@@ -93,35 +92,30 @@ export default function MyTicketDetails() {
         )}
       </dl>
 
-      {/* El QR sólo se muestra en una entrada ACTIVE: en una USED invitaría
-          a escanearla y la validación la rechazaría. En PENDING todavía no
-          hay código: se genera al confirmarse el pago. */}
+      {/* El código es lo que el asistente le dicta al operador en la
+          cancha. En PENDING todavía no existe: se genera al confirmarse
+          el pago. */}
       <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
         {ticket.code ? (
           <>
             <p className="text-sm font-medium text-navy">Código de acceso</p>
-            {ticket.status === 'ACTIVE' && (
-              <div className="mt-3 flex justify-center">
-                {/* Fondo blanco con margen: el lector necesita una zona
-                    clara alrededor del QR para detectarlo. */}
-                <div className="rounded-lg bg-white p-3">
-                  <QRCodeSVG
-                    value={ticket.code}
-                    size={192}
-                    level="M"
-                    title="Código QR de la entrada"
-                  />
-                </div>
-              </div>
-            )}
-            {/* El texto queda siempre: si el lector falla, se tipea.
-                break-all evita que desborde la tarjeta en celular. */}
-            <p className="mt-3 break-all text-center font-mono text-sm">
-              {ticket.code}
-            </p>
-            {ticket.status === 'ACTIVE' && (
-              <p className="mt-2 text-center text-xs text-muted">
-                Presentá este QR en la entrada de la cancha.
+            {ticket.status === 'ACTIVE' ? (
+              <>
+                {/* Monoespaciada para distinguir 0 de O, y con espacio
+                    entre caracteres porque se dicta de a uno. */}
+                <p className="mt-3 text-center font-mono text-4xl font-bold tracking-[0.3em] text-navy">
+                  {ticket.code}
+                </p>
+                <p className="mt-2 text-center text-xs text-muted">
+                  Decile este código al operador en la entrada de la cancha.
+                </p>
+              </>
+            ) : (
+              // En una USED el código queda como registro, pero chico y
+              // atenuado: mostrarlo grande invitaría a presentarla de
+              // nuevo y la validación la rechazaría.
+              <p className="mt-3 text-center font-mono text-sm text-muted line-through">
+                {ticket.code} · ya utilizada
               </p>
             )}
           </>
@@ -131,12 +125,6 @@ export default function MyTicketDetails() {
           </p>
         )}
       </div>
-
-      {ticket.status === 'PENDING' && ticket.reservedUntil && (
-        <p className="mt-4 text-sm text-amber-700">
-          Tu reserva vence a las {formatTime(ticket.reservedUntil)} hs.
-        </p>
-      )}
 
       <div className="mt-6 flex gap-2">
         <Button variant="secondary" onClick={() => navigate('/mis-entradas')}>

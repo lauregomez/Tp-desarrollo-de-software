@@ -1,6 +1,7 @@
 import { prisma } from '../../config/prisma';
 import { Category, MatchStatus, Prisma, TicketStatus } from '@prisma/client';
 import { CreateMatchDto, UpdateMatchDto, MatchFilters } from './match.types';
+import { SOLD_STATUSES } from '../ticket/ticket.types';
 
 const MATCH_DURATION_MINUTES = 50;
 
@@ -70,17 +71,7 @@ function matchInclude() {
     court: { select: { id: true, name: true, capacity: true } },
     _count: {
       select: {
-        tickets: {
-          where: {
-            OR: [
-              { status: { in: [TicketStatus.ACTIVE, TicketStatus.USED] } },
-              {
-                status: TicketStatus.PENDING,
-                reservedUntil: { gte: new Date() },
-              },
-            ],
-          },
-        },
+        tickets: { where: { status: { in: SOLD_STATUSES } } },
       },
     },
   };

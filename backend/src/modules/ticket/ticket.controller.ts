@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Prisma, TicketStatus, MatchStatus } from '@prisma/client';
 import { AuthRequest } from '../../middlewares/auth.types';
+import { ReserveTicketDto, SOLD_STATUSES } from './ticket.types';
 import {
   ticketService,
   toOwnerTicket,
@@ -109,18 +110,17 @@ export const ticketController = {
     res.status(201).json(result.data.map(toOwnerTicket));
   },
 
-  /**
-   * GET /api/tickets/me?status=ACTIVE
-   * Listado con filtro requerido por el enunciado.
-   * El userId sale siempre del token, nunca del query string.
-   */
-  async getMine(req: Request, res: Response): Promise<void> {
+   async getMine(req: Request, res: Response): Promise<void> {
     const user = requireUser(req);
     const { status } = req.query;
 
-    let statusFilter: TicketStatus | undefined;
+    // "Mis entradas" son las pagas: las PENDING son intentos de compra que
+    // pueden no concretarse nunca, y mostrarlas llenaría la lista de
+    // entradas que el usuario no tiene. Por eso ni siquiera se aceptan
+    // como filtro.
+    let statusFilter: TicketStatus | TicketStatus[] = SOLD_STATUSES;
     if (typeof status === 'string' && status !== '') {
-      if (!Object.values(TicketStatus).includes(status as TicketStatus)) {
+      if (!SOLD_STATUSES.includes(status as TicketStatus)) {
         res.status(400).json({ message: 'El estado indicado no es válido' });
         return;
       }
@@ -128,7 +128,7 @@ export const ticketController = {
     }
 
     const tickets = await ticketService.findAll({
-      userId: user .userId,
+      userId: user.userId,
       status: statusFilter,
     });
 
@@ -137,7 +137,7 @@ export const ticketController = {
 
   /**
    * GET /api/tickets/:id
-   * Detalle de la entrada, incluye el code para armar el QR.
+   * Detalle de la entrada, incluye el code para armar el código.
    */
   async getById(req: Request, res: Response): Promise<void> {
     const user = requireUser(req);
@@ -156,7 +156,7 @@ export const ticketController = {
     }
 
     // Control de propiedad: un usuario sólo ve sus propias entradas.
-    // Sin esto, cambiando el id en la URL se vería el QR ajeno, que es
+    // Sin esto, cambiando el id en la URL se vería el código ajeno, que es
     // equivalente a robarle la entrada.
     // Se responde 404 y no 403 para no revelar que la entrada existe.
     if (ticket.userId !== user .userId && !isStaff(req)) {
@@ -171,8 +171,9 @@ export const ticketController = {
    * POST /api/tickets/validate
    * Body: { code, matchId }
    *
-   * Escaneo del QR en la puerta. `matchId` es el partido que el operador
-   * está atendiendo: sirve para rechazar entradas de otra fecha.
+   * El asistente le dicta el código al operador, que lo ingresa en el
+   * sistema. `matchId` es el partido que el operador está atendiendo: el
+   * código sólo es único dentro del partido, así que se busca ahí.
    * Devuelve siempre un campo `valid` para que el frontend del operador
    * muestre verde o rojo sin interpretar el status code.
    */
@@ -193,17 +194,16 @@ export const ticketController = {
       return;
     }
 
-    const ticket = await ticketService.findByCode(code.trim());
+    // Los códigos se generan en mayúsculas; normalizar evita rechazar una
+    // entrada válida porque el operador la tipeó en minúsculas.
+    const normalizedCode = code.trim().toUpperCase();
+
+    const ticket = await ticketService.findByCode(matchId, normalizedCode);
 
     if (!ticket) {
-      res.status(404).json({ message: 'Entrada inexistente', valid: false });
-      return;
-    }
-
-    if (ticket.matchId !== matchId) {
       res
-        .status(409)
-        .json({ message: 'La entrada corresponde a otro partido', valid: false });
+        .status(404)
+        .json({ message: 'No existe una entrada con ese código para este partido', valid: false });
       return;
     }
 
