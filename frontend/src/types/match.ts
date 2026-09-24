@@ -48,12 +48,12 @@ export interface AdminMatch {
   price: string
   category: Category
   status: MatchStatus
-  homeClubId: number
-  awayClubId: number
-  courtId: number
-  homeClub: MatchClub
-  awayClub: MatchClub
-  court: CourtSummary
+  homeClubId: number | null
+  awayClubId: number | null
+  courtId: number | null
+  homeClub: MatchClub | null
+  awayClub: MatchClub | null
+  court: CourtSummary | null
   capacity: number
   sold: number
   available: number

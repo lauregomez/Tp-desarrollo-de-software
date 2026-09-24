@@ -27,9 +27,9 @@ export interface TicketMatch {
   price: string
   category: Category
   status: MatchStatus
-  homeClub: ClubSummary
-  awayClub: ClubSummary
-  court: TicketCourt
+  homeClub: ClubSummary | null
+  awayClub: ClubSummary | null
+  court: TicketCourt | null
 }
 
 // Una entrada del usuario logueado (GET /api/tickets/me y /api/tickets/:id).
