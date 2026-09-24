@@ -1,24 +1,22 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router'
-import { useAuth } from '../../../context/useAuth'
+import { useNavigate, useParams } from 'react-router'
 
 import Button from '../../shared/button/Button'
 import { getMatchById } from './MatchDetails.server'
 import ClubLogo from '../../shared/clubLogo/ClubLogo'
+import BuyTickets from '../../tickets/buyTickets/BuyTickets'
 import { CATEGORY_LABEL } from '../../../types/match'
 import type { PublicMatch } from '../../../types/match'
 import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
 
 export default function MatchDetails() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const { user } = useAuth()
   const { id } = useParams<{ id: string }>()
 
   const [match, setMatch] = useState<PublicMatch | null>(null)
-   // Si no hay id en la URL no hay nada que pedir, así que arrancamos
-   // sin loading. Inicializar el estado con el valor correcto evita el
-   // setState sincrónico dentro del efecto, que dispara un render de más.
+  // Si no hay id en la URL no hay nada que pedir, así que arrancamos
+  // sin loading. Inicializar el estado con el valor correcto evita el
+  // setState sincrónico dentro del efecto, que dispara un render de más.
   const [isLoading, setIsLoading] = useState(Boolean(id))
 
   useEffect(() => {
@@ -37,16 +35,6 @@ export default function MatchDetails() {
       onError: () => setIsLoading(false),
     })
   }, [id])
-
-  const handleBuy = () => {
-    // Mismo mecanismo que Protected: guardamos la ruta actual en state.from
-    // para que Login nos devuelva a este partido después de ingresar.
-    if (!user) {
-      navigate('/login', { state: { from: location } })
-      return
-    }
-    // La compra todavía no está implementada (CUU Comprar entrada).
-  }
 
   if (isLoading) {
     return <p className="text-muted">Cargando partido…</p>
@@ -113,15 +101,13 @@ export default function MatchDetails() {
         </div>
       </dl>
 
-      <div className="mt-6 flex gap-2">
+      {/* flex-wrap: en celular el selector y el botón bajan a otra línea
+          en vez de desbordar la tarjeta. */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <Button variant="secondary" onClick={() => navigate('/')}>
           Volver
         </Button>
-        {/* La compra todavía no está implementada: el botón queda
-            deshabilitado si el partido está agotado. */}
-        <Button variant="primary" disabled={match.soldOut} onClick={handleBuy}>
-          {match.soldOut ? 'Agotado' : 'Comprar entrada'}
-        </Button>
+        <BuyTickets matchId={match.id} soldOut={match.soldOut} />
       </div>
     </article>
   )

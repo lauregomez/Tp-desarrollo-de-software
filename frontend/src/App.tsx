@@ -15,6 +15,8 @@ import { useAuth } from './context/useAuth'
 import MatchAdmin from './components/matches/matchAdmin/MatchAdmin'
 import UserList from './components/users/userList/UserList'
 import Register from './components/auth/register/Register'
+import PaymentConfirming from './components/payments/paymentConfirming/PaymentConfirming'
+import PaymentError from './components/payments/paymentError/PaymentError'
 
 export default function App() {
   // La sesión se lee acá y baja por props a Protected, que se mantiene
@@ -27,6 +29,10 @@ export default function App() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<MatchList />} />
           <Route path="/partidos/:id" element={<MatchDetails />} />
+
+          {/* Vuelta de MercadoPago cuando el pago se rechaza. Es pública:
+              no consulta nada, así que no hace falta pedir sesión. */}
+          <Route path="/pago/error" element={<PaymentError />} />
 
           {/* Sólo un ADMIN entra acá. La sesión se lee de localStorage
               antes del primer render, así que un F5 no expulsa al login. */}
@@ -47,11 +53,15 @@ export default function App() {
             <Route path="/admin/usuarios/*" element={<UserList />} />
             <Route path="/admin/partidos/*" element={<MatchAdmin />} />
           </Route>
-                    {/* Cualquier usuario logueado ve sus propias entradas: este
+
+          {/* Cualquier usuario logueado ve sus propias entradas: este
               Protected no pasa roles, así que sólo exige sesión. El
               backend igual devuelve únicamente las del token. */}
           <Route element={<Protected isSignedIn={user !== null} />}>
             <Route path="/mis-entradas/*" element={<MyTicketList />} />
+            {/* Vuelta de MercadoPago con el pago aprobado o pendiente.
+                Necesita sesión porque consulta la entrada del usuario. */}
+            <Route path="/pago/confirmando" element={<PaymentConfirming />} />
           </Route>
         </Route>
 
