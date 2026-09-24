@@ -61,24 +61,6 @@ export const matchController = {
       categoryFilter = category as Category;
     }
 
-    let clubFilter: number | undefined;
-    if (typeof clubId === 'string' && clubId !== '') {
-      clubFilter = Number(clubId);
-      if (!Number.isInteger(clubFilter) || clubFilter <= 0) {
-        res.status(400).json({ message: 'El club indicado no es válido' });
-        return;
-      }
-    }
-
-    let courtFilter: number | undefined;
-    if (typeof courtId === 'string' && courtId !== '') {
-      courtFilter = Number(courtId);
-      if (!Number.isInteger(courtFilter) || courtFilter <= 0) {
-        res.status(400).json({ message: 'La cancha indicada no es válida' });
-        return;
-      }
-    }
-
     // Texto libre: se ignora si viene vacío o con solo espacios.
     const search = typeof q === 'string' && q.trim() !== '' ? q.trim() : undefined;
 
@@ -425,7 +407,9 @@ export const matchController = {
       return;
     }
 
-    const updated = await matchService.update(id, { status: status as MatchStatus });
+    // La ruta usa authenticate + authorize('ADMIN'): el usuario siempre está.
+    const { user } = req as AuthRequest;
+    const updated = await matchService.changeStatus(id, status as MatchStatus, user!.userId);
     res.json(toAdminMatch(updated));
   },
 

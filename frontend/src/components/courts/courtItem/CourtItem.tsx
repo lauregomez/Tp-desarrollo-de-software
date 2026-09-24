@@ -61,7 +61,7 @@ export default function CourtItem({ court, clubName, onEdit, onDelete }: CourtIt
       <ConfirmModal
         open={confirmOpen}
         title="Eliminar cancha"
-        message={`¿Estás seguro de que querés eliminar "${court.name}"? Esta acción no se puede deshacer.`}
+        message={`¿Estás seguro de que querés eliminar "${court.name}"? También se eliminan sus partidos en borrador. Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmOpen(false)}

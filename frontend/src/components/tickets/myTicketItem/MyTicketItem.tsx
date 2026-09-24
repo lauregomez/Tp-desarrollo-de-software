@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router'
 import Button from '../../shared/button/Button'
-import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
+import { formatPrice, formatShortDate, formatTime, courtName, clubName } from '../../../lib/format'
 import { STATUS_CLASS } from './MyTicketItem.const'
 import { TICKET_STATUS_LABEL } from '../../../types/ticket'
 import type { Ticket } from '../../../types/ticket'
@@ -19,7 +19,7 @@ export default function MyTicketItem({ ticket }: MyTicketItemProps) {
     <article className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <h2 className="font-semibold text-navy">
-          {match.homeClub.name} vs {match.awayClub.name}
+          {clubName(match.homeClub)} vs {clubName(match.awayClub)}
         </h2>
         <span
           className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${
@@ -33,7 +33,7 @@ export default function MyTicketItem({ ticket }: MyTicketItemProps) {
       <p className="text-muted">
         {formatShortDate(match.startsAt)} · {formatTime(match.startsAt)} hs
       </p>
-      <p className="text-muted">Cancha: {match.court.name}</p>
+        <p className="text-muted">Cancha: {courtName(match.court)}</p>
       {ticket.pricePaid && (
         <p className="text-muted">Pagaste: {formatPrice(ticket.pricePaid)}</p>
       )}

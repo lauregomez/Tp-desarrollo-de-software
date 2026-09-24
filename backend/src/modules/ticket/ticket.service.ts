@@ -138,7 +138,7 @@ export const ticketService = {
       }
 
       // 4. Cupo del partido: capacity del partido pisa la de la cancha.
-      const capacity = match.capacity ?? match.court.capacity;
+      const capacity = match.capacity ?? match.court?.capacity ?? 0;
       const occupied = await tx.ticket.count({ where: { matchId: dto.matchId } });
 
       if (occupied + dto.quantity > capacity) {

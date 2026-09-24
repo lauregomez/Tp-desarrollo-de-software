@@ -67,7 +67,7 @@ export default function ClubItem({ club, onEdit, onDelete }: ClubItemProps) {
       <ConfirmModal
         open={confirmOpen}
         title="Eliminar club"
-        message={`¿Estás seguro de que querés eliminar "${club.name}"? Esta acción no se puede deshacer.`}
+        message={`¿Estás seguro de que querés eliminar "${club.name}"? También se eliminan sus canchas y sus partidos en borrador. Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmOpen(false)}
