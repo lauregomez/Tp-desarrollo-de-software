@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
-import { courtService } from './court.service';
+import { courtService, toPublicCourt } from './court.service';
+import { AuthRequest } from '../../middlewares/auth.types';
+
 
 // Los dos campos son String sin @db.VarChar en el schema, así que Prisma usa
 // VARCHAR(191). Validar acá evita que MySQL rechace el insert y termine en un
@@ -10,11 +12,15 @@ const MAX_ADDRESS_LENGTH = 191;
 // Una dirección real tiene al menos calle y número: "a" no identifica nada.
 const MIN_ADDRESS_LENGTH = 5;
 
+function isAdmin(req: AuthRequest): boolean {
+    return req.user?.role === 'ADMIN';
+}
+
 export const courtController = {
 
     async getAll(req: Request, res: Response): Promise<void> {
         const courts = await courtService.findAll();
-        res.json(courts);
+        res.json(isAdmin(req) ? courts : courts.map(toPublicCourt));
     },
 
     async getById(req: Request, res: Response): Promise<void> {
@@ -30,7 +36,7 @@ export const courtController = {
             res.status(404).json({ message: 'Cancha no encontrada' });
             return;
         }
-        res.json(court);
+        res.json(isAdmin(req) ? court : toPublicCourt(court));
     },
 
     async create(req: Request, res: Response): Promise<void> {
