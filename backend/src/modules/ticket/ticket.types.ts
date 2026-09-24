@@ -27,7 +27,7 @@ export type ReserveTicketDto = {
 export type TicketFilters = {
   userId?: number;
   matchId?: number;
-  status?: TicketStatus;
+status?: TicketStatus | TicketStatus[];
 };
 
 /**

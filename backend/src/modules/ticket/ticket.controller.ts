@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Prisma, TicketStatus, MatchStatus } from '@prisma/client';
 import { AuthRequest } from '../../middlewares/auth.types';
+import { ReserveTicketDto, SOLD_STATUSES } from './ticket.types';
 import {
   ticketService,
   toOwnerTicket,
@@ -109,18 +110,17 @@ export const ticketController = {
     res.status(201).json(result.data.map(toOwnerTicket));
   },
 
-  /**
-   * GET /api/tickets/me?status=ACTIVE
-   * Listado con filtro requerido por el enunciado.
-   * El userId sale siempre del token, nunca del query string.
-   */
-  async getMine(req: Request, res: Response): Promise<void> {
+   async getMine(req: Request, res: Response): Promise<void> {
     const user = requireUser(req);
     const { status } = req.query;
 
-    let statusFilter: TicketStatus | undefined;
+    // "Mis entradas" son las pagas: las PENDING son intentos de compra que
+    // pueden no concretarse nunca, y mostrarlas llenaría la lista de
+    // entradas que el usuario no tiene. Por eso ni siquiera se aceptan
+    // como filtro.
+    let statusFilter: TicketStatus | TicketStatus[] = SOLD_STATUSES;
     if (typeof status === 'string' && status !== '') {
-      if (!Object.values(TicketStatus).includes(status as TicketStatus)) {
+      if (!SOLD_STATUSES.includes(status as TicketStatus)) {
         res.status(400).json({ message: 'El estado indicado no es válido' });
         return;
       }
@@ -128,7 +128,7 @@ export const ticketController = {
     }
 
     const tickets = await ticketService.findAll({
-      userId: user .userId,
+      userId: user.userId,
       status: statusFilter,
     });
 

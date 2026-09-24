@@ -82,7 +82,9 @@ export const ticketService = {
       where: {
         userId: filters.userId,
         matchId: filters.matchId,
-        status: filters.status,
+        status: Array.isArray(filters.status)
+          ? { in: filters.status }
+          : filters.status,
       },
       include: TICKET_INCLUDE,
       orderBy: { createdAt: 'desc' },
