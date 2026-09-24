@@ -23,7 +23,7 @@ export default function MatchList() {
     // status va fijo: en la pantalla pública solo se listan publicados,
     // por eso el usuario no elige estado.
     getMatches(
-      { ...filters, status: 'PUBLISHED' },
+      { ...filters, statuses: ['PUBLISHED'] },
       {
         onSuccess: (data) => {
           if (ignore) return
