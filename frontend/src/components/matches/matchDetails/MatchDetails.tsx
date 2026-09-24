@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useLocation, useNavigate, useParams } from 'react-router'
+import { useAuth } from '../../../context/useAuth'
 
 import Button from '../../shared/button/Button'
 import { getMatchById } from './MatchDetails.server'
@@ -10,6 +11,8 @@ import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
 
 export default function MatchDetails() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuth()
   const { id } = useParams<{ id: string }>()
 
   const [match, setMatch] = useState<PublicMatch | null>(null)
@@ -34,6 +37,16 @@ export default function MatchDetails() {
       onError: () => setIsLoading(false),
     })
   }, [id])
+
+  const handleBuy = () => {
+    // Mismo mecanismo que Protected: guardamos la ruta actual en state.from
+    // para que Login nos devuelva a este partido después de ingresar.
+    if (!user) {
+      navigate('/login', { state: { from: location } })
+      return
+    }
+    // La compra todavía no está implementada (CUU Comprar entrada).
+  }
 
   if (isLoading) {
     return <p className="text-muted">Cargando partido…</p>
@@ -106,7 +119,7 @@ export default function MatchDetails() {
         </Button>
         {/* La compra todavía no está implementada: el botón queda
             deshabilitado si el partido está agotado. */}
-        <Button variant="primary" disabled={match.soldOut}>
+        <Button variant="primary" disabled={match.soldOut} onClick={handleBuy}>
           {match.soldOut ? 'Agotado' : 'Comprar entrada'}
         </Button>
       </div>
