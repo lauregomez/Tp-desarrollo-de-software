@@ -11,9 +11,10 @@ let matchId: number;
 
 // Crea una entrada del partido de prueba con el estado indicado.
 // reservedUntil sólo importa para las PENDING: es el vencimiento del hold.
-async function addTicket(status: TicketStatus, reservedUntil: Date | null = null) {
+// Crea una entrada del partido de prueba con el estado indicado.
+async function addTicket(status: TicketStatus) {
   await prisma.ticket.create({
-    data: { status, reservedUntil, pricePaid: '2500.00', userId, matchId },
+    data: { status, pricePaid: '2500.00', userId, matchId },
   });
 }
 
@@ -88,18 +89,14 @@ describe('soldOut', () => {
     expect(await isSoldOut()).toBe(true);
   });
 
-  it('cuenta una reserva PENDING vigente: el lugar está retenido', async () => {
+  it('no cuenta las PENDING: son intentos de compra que no ocupan lugar', async () => {
+    // Con capacidad 2, una ACTIVE deja un lugar libre. Las PENDING no lo
+    // ocupan aunque sean varias: pueden no pagarse nunca, así que contarlas
+    // haría figurar agotado un partido con lugar disponible.
     await addTicket(TicketStatus.ACTIVE);
-    await addTicket(TicketStatus.PENDING, new Date(Date.now() + 10 * MINUTE));
-    expect(await isSoldOut()).toBe(true);
-  });
-
-  it('no cuenta una reserva PENDING vencida: el lugar vuelve a estar libre', async () => {
-    // El caso del bug reportado: si el vencimiento se evaluara una sola vez
-    // (una constante en vez de la función matchInclude), esta reserva
-    // seguiría ocupando lugar y el partido figuraría agotado.
-    await addTicket(TicketStatus.ACTIVE);
-    await addTicket(TicketStatus.PENDING, new Date(Date.now() - 1 * MINUTE));
+    await addTicket(TicketStatus.PENDING);
+    await addTicket(TicketStatus.PENDING);
+    await addTicket(TicketStatus.PENDING);
     expect(await isSoldOut()).toBe(false);
   });
 });
