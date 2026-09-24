@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomInt } from 'node:crypto';
 import { prisma } from '../../config/prisma';
 import { MatchStatus, TicketStatus, Prisma } from '@prisma/client';
 import {
@@ -9,7 +9,6 @@ import {
   ReserveFailureReason,
   ServiceResult,
   MAX_TICKETS_PER_USER_PER_MATCH,
-  HOLD_MINUTES,
 } from './ticket.types';
 
 /**
@@ -42,44 +41,44 @@ export type TicketWithRelations = Prisma.TicketGetPayload<{
   include: typeof TICKET_INCLUDE;
 }>;
 
-/**
- * Borra las reservas vencidas de un partido para liberar cupo.
- * Se declara fuera del objeto service porque recibe el cliente
- * transaccional (tx) y así se evitan problemas con `this`.
- *
- * Estrategia: en vez de un cron que limpie periódicamente, se limpia al
- * inicio de cada reserva. El cupo se libera exactamente cuando alguien lo
- * necesita y no hace falta infraestructura extra.
- *
- * Los tickets con mpOrderId quedan excluidos: ya tienen una orden de pago
- * abierta y borrarlos dejaría al comprador pagando algo que no existe.
- */
-// Ventana extendida para las reservas que ya tienen orden de MercadoPago:
-// el usuario puede estar en el checkout, o el pago puede quedar pendiente
-// un rato. Pasado este plazo se liberan igual, porque si no una compra
-// abandonada dejaría la entrada retenida para siempre.
-const ORDER_RELEASE_MS = 60 * 60 * 1000; // 1 hora
+// Estados que ocupan lugar: sólo las entradas pagas. Una PENDING es un
+// intento de compra que puede no concretarse nunca, así que no cuenta ni
+// para el cupo del partido ni para el límite por usuario. Por eso tampoco
+// hace falta vencerlas ni borrarlas: no le quitan el lugar a nadie.
+const SOLD_STATUSES: TicketStatus[] = [TicketStatus.ACTIVE, TicketStatus.USED];
 
-async function releaseExpired(
+
+const CODE_ALPHABET = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ0123456789';
+const CODE_LENGTH = 4;
+const MAX_CODE_ATTEMPTS = 5;
+
+// randomInt usa el generador criptográfico del sistema. Math.random no sirve:
+// es predecible, y con suficientes muestras se podrían adivinar códigos válidos.
+function generateCode(): string {
+  let code = '';
+  for (let i = 0; i < CODE_LENGTH; i++) {
+    code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  }
+  return code;
+}
+
+// El código sólo tiene que ser único dentro del partido: el operador valida
+// siempre en el contexto del partido que está atendiendo. Con tantas
+// combinaciones, una colisión es casi imposible; el límite de intentos es
+// para no tener un bucle infinito teórico.
+async function generateUniqueCode(
   tx: Prisma.TransactionClient,
   matchId: number,
-): Promise<number> {
-  const { count } = await tx.ticket.deleteMany({
-    where: {
-      matchId,
-      status: TicketStatus.PENDING,
-      OR: [
-        // Sin orden: vale el hold normal de 15 minutos.
-        { mpOrderId: null, reservedUntil: { lt: new Date() } },
-        // Con orden: recién una hora después de haberse creado la reserva.
-        {
-          mpOrderId: { not: null },
-          createdAt: { lt: new Date(Date.now() - ORDER_RELEASE_MS) },
-        },
-      ],
-    },
-  });
-  return count;
+): Promise<string> {
+  for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
+    const code = generateCode();
+    const taken = await tx.ticket.findFirst({
+      where: { matchId, code },
+      select: { id: true },
+    });
+    if (!taken) return code;
+  }
+  throw new Error('No se pudo generar un código único para la entrada');
 }
 
 export const ticketService = {
@@ -109,22 +108,20 @@ export const ticketService = {
     });
   },
 
-  /**
-   * Reserva N entradas en estado PENDING con vencimiento a 15 minutos.
+    /**
+   * Reserva N entradas en estado PENDING: representan el intento de compra
+   * que después se asocia a la orden de MercadoPago.
    *
-   * Todo ocurre dentro de una transacción porque las validaciones de cupo
-   * y de límite por usuario sólo son confiables si se ejecutan junto al
-   * INSERT. Si validáramos antes y creáramos después, dos compradores
-   * simultáneos podrían pasar ambos la validación del último lugar.
+   * Las validaciones de cupo y de límite por usuario son preliminares:
+   * evitan iniciar un pago que ya se sabe que no va a entrar. La validación
+   * definitiva se repite al confirmar el pago, porque recién ahí la entrada
+   * pasa a ocupar lugar.
    */
   async reserve(
     dto: ReserveTicketDto,
   ): Promise<ServiceResult<TicketWithRelations[], ReserveFailureReason>> {
     return prisma.$transaction(async (tx) => {
-      // 1. Liberar cupo de reservas abandonadas.
-      await releaseExpired(tx, dto.matchId);
-
-      // 2. Traer el partido junto con la capacidad de la cancha.
+      // 1. Traer el partido junto con la capacidad de la cancha.
       const match = await tx.match.findUnique({
         where: { id: dto.matchId },
         include: { court: { select: { capacity: true } } },
@@ -143,31 +140,34 @@ export const ticketService = {
         return { ok: false as const, reason: 'MATCH_ALREADY_STARTED' as const };
       }
 
-      // 3. Límite de 5 entradas por usuario y por partido.
-      //    Después del paso 1 todas las PENDING que quedan están vigentes,
-      //    así que alcanza con contar todas las filas del usuario.
+      // 2. Límite de 5 entradas por usuario y por partido.
+      //    Sólo cuentan las pagas: si contáramos las PENDING, un usuario que
+      //    abandonó un par de intentos de compra quedaría bloqueado.
       const userTickets = await tx.ticket.count({
-        where: { userId: dto.userId, matchId: dto.matchId },
+        where: {
+          userId: dto.userId,
+          matchId: dto.matchId,
+          status: { in: SOLD_STATUSES },
+        },
       });
 
       if (userTickets + dto.quantity > MAX_TICKETS_PER_USER_PER_MATCH) {
         return { ok: false as const, reason: 'USER_LIMIT_EXCEEDED' as const };
       }
 
-      // 4. Cupo del partido: capacity del partido pisa la de la cancha.
+      // 3. Cupo del partido: capacity del partido pisa la de la cancha.
       const capacity = match.capacity ?? match.court.capacity;
       const occupied = await tx.ticket.count({
-        where: { matchId: dto.matchId },
+        where: { matchId: dto.matchId, status: { in: SOLD_STATUSES } },
       });
 
       if (occupied + dto.quantity > capacity) {
         return { ok: false as const, reason: 'NOT_ENOUGH_CAPACITY' as const };
       }
 
-      // 5. Crear N tickets independientes (N QR distintos).
+      // 4. Crear N tickets independientes (cada uno tendrá su propio código).
       //    createMany no devuelve las filas creadas en MySQL, así que se
       //    crean de a uno. Con un máximo de 5 el costo es despreciable.
-      const reservedUntil = new Date(Date.now() + HOLD_MINUTES * 60 * 1000);
       const created: TicketWithRelations[] = [];
 
       for (let i = 0; i < dto.quantity; i++) {
@@ -177,7 +177,6 @@ export const ticketService = {
             matchId: dto.matchId,
             pricePaid: match.price, // snapshot del precio al momento de reservar
             status: TicketStatus.PENDING,
-            reservedUntil,
             // code queda null: recién se genera cuando el pago se confirma
           },
           include: TICKET_INCLUDE,
@@ -189,7 +188,7 @@ export const ticketService = {
     });
   },
 
-  /**
+    /**
    * Confirma las entradas de una orden de pago aprobada.
    * La llama el webhook de MercadoPago.
    *
@@ -200,11 +199,8 @@ export const ticketService = {
    * Filtrar por PENDING da idempotencia: MercadoPago reintenta las
    * notificaciones y en la segunda no queda nada para confirmar.
    *
-   * No se filtra por reservedUntil: si el pago se aprobó, la entrada se
-   * entrega aunque el hold haya vencido durante el checkout.
-   *
-   * El code se genera con randomUUID() y no de forma secuencial para que
-   * no se puedan adivinar entradas válidas por fuerza bruta.
+   * No se revalida el cupo: si el pago se aprobó, la entrada se entrega.
+   * El control de cupo y de límite por usuario se hace al reservar.
    */
   async confirmPayment(
     ticketIds: number[],
@@ -216,25 +212,24 @@ export const ticketService = {
           id: { in: ticketIds },
           status: TicketStatus.PENDING,
         },
-        select: { id: true },
+        select: { id: true, matchId: true },
       });
 
       const confirmed: TicketWithRelations[] = [];
 
-      for (const { id } of pending) {
+      for (const { id, matchId } of pending) {
         // El status va también en el where del update: con dos notificaciones
         // simultáneas, las dos pasan el findMany, pero el UPDATE relee la fila
         // después de esperar el lock y solo una la encuentra PENDING. Sin esto,
-        // la segunda regeneraría el code y el QR que ya tiene el usuario
+        // la segunda regeneraría el código y el que ya tiene el usuario
         // dejaría de valer. updateMany en vez de update porque no tira error
         // cuando no hay coincidencia.
         const { count } = await tx.ticket.updateMany({
           where: { id, status: TicketStatus.PENDING },
           data: {
             status: TicketStatus.ACTIVE,
-            code: randomUUID(),
+            code: await generateUniqueCode(tx, matchId),
             mpPaymentId,
-            reservedUntil: null, // ya no hay hold que vencer
             // mpOrderId se conserva: es la trazabilidad de la orden y lo que
             // permite reencontrar estos tickets cuando MercadoPago reintenta
             // la notificación.
@@ -274,7 +269,9 @@ export const ticketService = {
 
   /**
    * Asocia la orden de MercadoPago a los tickets.
-   * A partir de acá releaseExpired no los toca: están en proceso de pago.
+   *
+   * Sólo actualiza las PENDING: una entrada ya confirmada conserva la orden
+   * con la que se pagó.
    */
   async attachOrder(ticketIds: number[], mpOrderId: string): Promise<number> {
     const { count } = await prisma.ticket.updateMany({
