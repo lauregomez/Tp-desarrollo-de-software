@@ -14,6 +14,7 @@ import PageNotFound from './components/pageNotFound/PageNotFound'
 import { useAuth } from './context/useAuth'
 import MatchAdmin from './components/matches/matchAdmin/MatchAdmin'
 import UserList from './components/users/userList/UserList'
+import Register from './components/auth/register/Register'
 
 export default function App() {
   // La sesión se lee acá y baja por props a Protected, que se mantiene
@@ -56,6 +57,7 @@ export default function App() {
 
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
+          <Route path="/registro" element={<Register />} />
         </Route>
 
         {/* path="*" matchea cualquier URL que no haya matcheado antes.
