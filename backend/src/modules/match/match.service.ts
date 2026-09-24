@@ -1,5 +1,5 @@
 import { prisma } from '../../config/prisma';
-import { Category, MatchStatus, TicketStatus } from '@prisma/client';
+import { Category, MatchStatus, Prisma, TicketStatus } from '@prisma/client';
 import { CreateMatchDto, UpdateMatchDto, MatchFilters } from './match.types';
 
 const MATCH_DURATION_MINUTES = 50;
@@ -44,19 +44,39 @@ function matchInclude() {
 
 export const matchService = {
   async findAll(filters: MatchFilters = {}) {
+    // Club y búsqueda necesitan un OR cada uno. Si los dos fueran claves OR
+    // del mismo objeto, la segunda pisaría a la primera: dentro de un AND
+    // se combinan sin problema.
+    const conditions: Prisma.MatchWhereInput[] = [];
+
+    if (filters.clubId) {
+      conditions.push({
+        OR: [{ homeClubId: filters.clubId }, { awayClubId: filters.clubId }],
+      });
+    }
+
+    if (filters.q) {
+      conditions.push({
+        OR: [
+          { homeClub: { name: { contains: filters.q } } },
+          { awayClub: { name: { contains: filters.q } } },
+          { court: { name: { contains: filters.q } } },
+        ],
+      });
+    }
+
     return prisma.match.findMany({
       where: {
         status: filters.status,
         category: filters.category,
-        ...(filters.clubId && {
-          OR: [{ homeClubId: filters.clubId }, { awayClubId: filters.clubId }],
-        }),
+        courtId: filters.courtId,
         ...((filters.from || filters.to) && {
           startsAt: {
             ...(filters.from && { gte: filters.from }),
             ...(filters.to && { lte: filters.to }),
           },
         }),
+        AND: conditions,
       },
       include: matchInclude(),
       orderBy: { startsAt: 'asc' },

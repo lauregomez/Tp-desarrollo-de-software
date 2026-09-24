@@ -9,6 +9,8 @@ export type MatchFilters = {
   status?: MatchStatus;
   category?: Category;
   clubId?: number;
+  courtId?: number;
+  q?: string;
   from?: Date;
   to?: Date;
 };

@@ -15,7 +15,7 @@ function isAdmin(req: AuthRequest): boolean {
 export const matchController = {
   async getAll(req: Request, res: Response): Promise<void> {
     const admin = isAdmin(req);
-    const { status, category, clubId, from, to } = req.query;
+    const { status, category, clubId, courtId, q, from, to } = req.query;
 
     let statusFilter: MatchStatus | undefined = MatchStatus.PUBLISHED;
 
@@ -48,6 +48,18 @@ export const matchController = {
       }
     }
 
+    let courtFilter: number | undefined;
+    if (typeof courtId === 'string' && courtId !== '') {
+      courtFilter = Number(courtId);
+      if (!Number.isInteger(courtFilter) || courtFilter <= 0) {
+        res.status(400).json({ message: 'La cancha indicada no es válida' });
+        return;
+      }
+    }
+
+    // Texto libre: se ignora si viene vacío o con solo espacios.
+    const search = typeof q === 'string' && q.trim() !== '' ? q.trim() : undefined;
+
     let fromFilter: Date | undefined;
     if (typeof from === 'string' && from !== '') {
       fromFilter = new Date(from);
@@ -75,6 +87,8 @@ export const matchController = {
       status: statusFilter,
       category: categoryFilter,
       clubId: clubFilter,
+      courtId: courtFilter,
+      q: search,
       from: fromFilter,
       to: toFilter,
     });
