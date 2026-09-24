@@ -18,7 +18,7 @@ export default function Hero() {
           Viví el fútsal de Rosario
         </h1>
         <p className="mt-4 text-white/80 md:text-lg">
-          Comprá tu entrada general online y entrá a la cancha con tu código QR.
+          Comprá tu entrada general online y entrá a la cancha con tu código de acceso.
         </p>
         {/* Ancla a la lista de abajo: es un link, no un botón, porque
             lleva a otra parte de la página y no ejecuta una acción. */}
