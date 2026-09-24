@@ -183,7 +183,7 @@ export const paymentController = {
 
     const action = notification.action;
 
-    // Un reembolso supone una entrada ya confirmada, con QR emitido y quizás
+    // Un reembolso supone una entrada ya confirmada, con código emitido y quizás
     // ya usada en la puerta. Revertirlo no es simétrico a liberar una reserva:
     // hay que decidir qué pasa con el acceso al partido y con el dinero, y eso
     // excede al webhook. Queda registrado para revisión manual.
@@ -273,7 +273,7 @@ export const paymentController = {
     }
 
     // confirmPayment sólo toca las PENDING: en un reintento no queda nada por
-    // confirmar y no se regeneran los QR ya emitidos.
+    // confirmar y no se regeneran los códigos ya emitidos.
     const confirmed = await ticketService.confirmPayment(ticketIds, paymentId);
 
     console.log(

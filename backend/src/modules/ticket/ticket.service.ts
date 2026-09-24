@@ -43,7 +43,7 @@ export type TicketWithRelations = Prisma.TicketGetPayload<{
 }>;
 
 
-const CODE_ALPHABET = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ0123456789';
+const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const CODE_LENGTH = 4;
 const MAX_CODE_ATTEMPTS = 5;
 
@@ -96,9 +96,16 @@ export const ticketService = {
     });
   },
 
-  async findByCode(code: string): Promise<TicketWithRelations | null> {
+  /**
+   * Busca una entrada por su código dentro de un partido.
+   * El código sólo es único dentro del partido, así que se necesitan los dos.
+   */
+  async findByCode(
+    matchId: number,
+    code: string,
+  ): Promise<TicketWithRelations | null> {
     return prisma.ticket.findUnique({
-      where: { code },
+      where: { matchId_code: { matchId, code } },
       include: TICKET_INCLUDE,
     });
   },
@@ -293,7 +300,7 @@ export const ticketService = {
   /**
    * Libera las entradas de una orden que no llegó a pagarse.
    *
-   * Sólo borra las PENDING: una ACTIVE ya tiene el pago acreditado y el QR
+   * Sólo borra las PENDING: una ACTIVE ya tiene el pago acreditado y el código
    * emitido, y no se toca aunque la orden figure cancelada.
    *
    * Es el mismo criterio de releaseExpired --liberar es borrar la fila-- pero
@@ -316,7 +323,7 @@ export const ticketService = {
    * Marca una entrada como usada al ingresar al evento.
    *
    * La condición `status: ACTIVE` dentro del where es lo que evita el doble
-   * uso: si dos operadores escanean el mismo QR simultáneamente, el segundo
+   * uso: si dos operadores escanean el mismo código simultáneamente, el segundo
    * update no encuentra fila y Prisma lanza P2025, que el controller
    * traduce a 409.
    */
@@ -343,7 +350,7 @@ export const ticketService = {
 
 /**
  * Vista para el dueño de la entrada.
- * Incluye el code porque es lo que el frontend convierte en QR.
+ * Incluye el code porque es lo que el frontend convierte en código.
  * Oculta los datos del usuario, que ya conoce.
  */
 export function toOwnerTicket(ticket: TicketWithRelations) {

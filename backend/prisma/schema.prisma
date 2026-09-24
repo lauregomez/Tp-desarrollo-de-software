@@ -90,10 +90,9 @@ enum MatchStatus {
 
 model Ticket {
   id            Int          @id @default(autoincrement())
-  code          String?      @unique
+  code          String?
   status        TicketStatus @default(PENDING)
   pricePaid     Decimal      @map("price_paid") @db.Decimal(10, 2)
-  reservedUntil DateTime?    @map("reserved_until")
   mpOrderId     String?      @map("mp_order_id")
   mpPaymentId   String?      @map("mp_payment_id")
   user          User         @relation(fields: [userId], references: [id])
@@ -102,6 +101,7 @@ model Ticket {
   matchId       Int          @map("match_id")
   createdAt     DateTime     @default(now()) @map("created_at")
 
+  @@unique([matchId, code])
   @@index([matchId, status])
   @@index([mpOrderId])
   @@map("tickets")

@@ -16,7 +16,7 @@ export const MAX_TICKETS_PER_USER_PER_MATCH = 5;
 
 /**
  * Intención de compra: no es una fila de la tabla tickets.
- * El service la traduce en N tickets independientes (N QR distintos).
+ * El service la traduce en N tickets independientes (N códigos distintos).
  */
 export type ReserveTicketDto = {
   userId: number;
