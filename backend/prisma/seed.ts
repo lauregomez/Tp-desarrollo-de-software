@@ -271,10 +271,9 @@ async function seedMatches(
 /**
  * Entradas de ejemplo para el usuario común, una por estado.
  *
- * Se cargan desde el seed porque todavía no existe el endpoint del pago:
- * `confirmPayment` está en el service pero ninguna ruta lo expone, así que
- * por API sólo se pueden crear entradas PENDING. Sin estos datos no hay
- * forma de probar el listado, el detalle ni el QR.
+ * Permiten probar el listado, el detalle y la validación en cancha sin
+ * tener que pasar por un pago real de MercadoPago cada vez que se
+ * reinicia la base.
  */
 async function seedTickets(userId: number, matchIds: number[]) {
   // No se usa upsert por id: cuando exista el flujo de compra, las entradas
@@ -291,22 +290,22 @@ async function seedTickets(userId: number, matchIds: number[]) {
   await prisma.ticket.createMany({
     data: [
       {
-        // Reserva sin pagar: vence en 15 minutos contados desde que corre el seed.
+        // Intento de compra sin pagar: no ocupa lugar ni tiene código.
         status: TicketStatus.PENDING,
-        code: null, // el QR se genera recién al confirmarse el pago
+        code: null, // el código se genera recién al confirmarse el pago
         pricePaid: TICKET_PRICE,
-        reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
         mpPaymentId: null,
         userId,
         matchId: matchIds[0],
       },
       {
-        // Entrada pagada y lista para usar: tiene code y ya no tiene hold.
-        // El prefijo "seed-" no puede chocar con un code real, que es un UUID.
+        // Entrada pagada y lista para validar en cancha.
+        // Los códigos tienen el mismo formato que los reales (4 caracteres
+        // en mayúsculas) y no chocan con ellos: al confirmar un pago, el
+        // generador descarta los códigos que ya existen en el partido.
         status: TicketStatus.ACTIVE,
-        code: 'seed-ticket-active-0001',
+        code: 'DEMO',
         pricePaid: TICKET_PRICE,
-        reservedUntil: null,
         mpPaymentId: 'seed-payment-0001',
         userId,
         matchId: matchIds[0],
@@ -314,9 +313,8 @@ async function seedTickets(userId: number, matchIds: number[]) {
       {
         // Entrada ya usada, asociada al partido finalizado del seed.
         status: TicketStatus.USED,
-        code: 'seed-ticket-used-0001',
+        code: 'GOL1',
         pricePaid: TICKET_PRICE,
-        reservedUntil: null,
         mpPaymentId: 'seed-payment-0002',
         userId,
         matchId: matchIds[3],
