@@ -55,6 +55,9 @@ export default function Header() {
               <NavLink to="/admin/partidos" className={linkClass}>
                 Gestión
               </NavLink>
+              <NavLink to="/admin/historial" className={linkClass}>
+                Historial
+              </NavLink>
             </>
           )}
         </nav>

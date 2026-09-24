@@ -26,7 +26,7 @@ const TICKET_INCLUDE = {
     include: {
       homeClub: { select: { id: true, name: true } },
       awayClub: { select: { id: true, name: true } },
-      court: { select: { id: true, name: true } },
+      court: { select: { id: true, name: true, address: true } },
     },
   },
   user: { select: { id: true, name: true, lastName: true, email: true } },
@@ -160,7 +160,9 @@ export const ticketService = {
       }
 
       // 3. Cupo del partido: capacity del partido pisa la de la cancha.
-      const capacity = match.capacity ?? match.court.capacity;
+      //    La cancha puede haber sido eliminada (court es null): en ese
+      //    caso, sin capacity propia, el partido no tiene cupo.
+      const capacity = match.capacity ?? match.court?.capacity ?? 0;
       const occupied = await tx.ticket.count({
         where: { matchId: dto.matchId, status: { in: SOLD_STATUSES } },
       });

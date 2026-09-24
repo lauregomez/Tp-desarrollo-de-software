@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 
 import Button from '../../shared/button/Button'
-import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
+import { formatPrice, formatShortDate, formatTime, courtName, clubName } from '../../../lib/format'
 import { getMyTicket } from './MyTicketDetails.server'
 import { TICKET_STATUS_LABEL } from '../../../types/ticket'
 import type { Ticket } from '../../../types/ticket'
@@ -55,7 +55,7 @@ export default function MyTicketDetails() {
   return (
     <article className="max-w-md rounded-xl border border-slate-200 bg-white p-6">
       <h2 className="text-xl font-bold text-navy">
-        {match.homeClub.name} vs {match.awayClub.name}
+          {clubName(match.homeClub)} vs {clubName(match.awayClub)}
       </h2>
 
       <dl className="mt-4 space-y-1 text-sm text-muted">
@@ -67,7 +67,11 @@ export default function MyTicketDetails() {
         </div>
         <div>
           <dt className="inline">Cancha: </dt>
-          <dd className="inline">{match.court.name}</dd>
+            <dd className="inline">{courtName(match.court)}</dd>
+        </div>
+        <div>
+          <dt className="inline">Dirección: </dt>
+            <dd className="inline">{match.court?.address ?? '—'}</dd>
         </div>
         <div>
           <dt className="inline">Estado: </dt>

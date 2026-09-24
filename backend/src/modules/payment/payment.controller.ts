@@ -91,7 +91,12 @@ export const paymentController = {
       return;
     }
 
-    const matchTitle = `${match.match.homeClub.name} vs ${match.match.awayClub.name}`;
+       // Los clubes pueden estar eliminados (null) desde que se conserva el
+    // historial de partidos. Para el título del ítem en MercadoPago alcanza
+    // con un texto genérico: el pago no depende de ese nombre.
+    const homeName = match.match.homeClub?.name ?? 'Club eliminado';
+    const awayName = match.match.awayClub?.name ?? 'Club eliminado';
+    const matchTitle = `${homeName} vs ${awayName}`;
 
     const payer = await userService.findById(user.userId);
     if (!payer) {

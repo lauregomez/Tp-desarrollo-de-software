@@ -1,5 +1,5 @@
 import { prisma } from '../../config/prisma';
-import { Category, MatchStatus, TicketStatus } from '@prisma/client';
+import { Category, MatchStatus, Prisma, TicketStatus } from '@prisma/client';
 import { CreateMatchDto, UpdateMatchDto, MatchFilters } from './match.types';
 import { SOLD_STATUSES } from '../ticket/ticket.types';
 
@@ -20,6 +20,50 @@ function argentinaDayRange(date: Date) {
   return { start, end: new Date(start.getTime() + DAY_MS) };
 }
 
+const CATEGORY_LABEL: Record<Category, string> = {
+  PRIMERA: 'Primera',
+  RESERVA: 'Reserva',
+  CUARTA: 'Cuarta',
+  QUINTA: 'Quinta',
+};
+
+// Solo estos estados generan un registro en el historial.
+const LOGGED_STATUS_LABEL: Partial<Record<MatchStatus, string>> = {
+  FINISHED: 'Finalizado',
+  CANCELLED: 'Suspendido',
+};
+
+// Lo mínimo que hace falta para describir un partido.
+type LoggableMatch = {
+  status: MatchStatus;
+  startsAt: Date;
+  category: Category;
+  homeClub: { name: string } | null;
+  awayClub: { name: string } | null;
+  court: { name: string } | null;
+};
+
+// Arma el texto del historial con los nombres de ese momento. Se guarda así,
+// ya armado, para que el registro no se pierda si después se borra un club.
+// Nunca incluye resultado: el sistema no maneja goles.
+function describeMatch(match: LoggableMatch): string {
+  const date = new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/Argentina/Buenos_Aires',
+  }).format(match.startsAt);
+
+  const home = match.homeClub?.name ?? 'Club eliminado';
+  const away = match.awayClub?.name ?? 'Club eliminado';
+  const court = match.court?.name ?? 'Cancha eliminada';
+
+  return `${LOGGED_STATUS_LABEL[match.status]}: ${home} contra ${away} · ${CATEGORY_LABEL[match.category]} · ${date} · ${court}`;
+}
+
 function matchInclude() {
   return {
     homeClub: { select: { id: true, name: true, logoUrl: true } },
@@ -35,19 +79,42 @@ function matchInclude() {
 
 export const matchService = {
   async findAll(filters: MatchFilters = {}) {
+    // Club y búsqueda necesitan un OR cada uno. Si los dos fueran claves OR
+    // del mismo objeto, la segunda pisaría a la primera: dentro de un AND
+    // se combinan sin problema.
+    const conditions: Prisma.MatchWhereInput[] = [];
+
+    if (filters.clubIds?.length) {
+      conditions.push({
+        OR: [
+          { homeClubId: { in: filters.clubIds } },
+          { awayClubId: { in: filters.clubIds } },
+        ],
+      });
+    }
+
+    if (filters.q) {
+      conditions.push({
+        OR: [
+          { homeClub: { name: { contains: filters.q } } },
+          { awayClub: { name: { contains: filters.q } } },
+          { court: { name: { contains: filters.q } } },
+        ],
+      });
+    }
+
     return prisma.match.findMany({
       where: {
-        status: filters.status,
+        status: filters.statuses?.length ? { in: filters.statuses } : undefined,
         category: filters.category,
-        ...(filters.clubId && {
-          OR: [{ homeClubId: filters.clubId }, { awayClubId: filters.clubId }],
-        }),
+        courtId: filters.courtIds?.length ? { in: filters.courtIds } : undefined,
         ...((filters.from || filters.to) && {
           startsAt: {
             ...(filters.from && { gte: filters.from }),
             ...(filters.to && { lte: filters.to }),
           },
         }),
+        AND: conditions,
       },
       include: matchInclude(),
       orderBy: { startsAt: 'asc' },
@@ -73,6 +140,30 @@ export const matchService = {
       where: { id },
       data: dto,
       include: matchInclude(),
+    });
+  },
+
+  // Cambia el estado y, si es finalizado o suspendido, registra el partido en
+  // el historial. Van en una transacción: o se hacen las dos cosas o ninguna.
+  async changeStatus(id: number, status: MatchStatus, userId: number) {
+    return prisma.$transaction(async (tx) => {
+      const match = await tx.match.update({
+        where: { id },
+        data: { status },
+        include: matchInclude(),
+      });
+
+      if (LOGGED_STATUS_LABEL[status]) {
+        await tx.matchLog.create({
+          data: {
+            description: describeMatch(match),
+            matchId: id,
+            createdById: userId,
+          },
+        });
+      }
+
+      return match;
     });
   },
 
@@ -132,7 +223,9 @@ export const matchService = {
 type MatchWithRelations = NonNullable<Awaited<ReturnType<typeof matchService.findById>>>;
 
 export function resolveCapacity(match: MatchWithRelations): number {
-  return match.capacity ?? match.court.capacity;
+  // Sin cancha solo quedan partidos cuya cancha se borró, que ya están
+  // finalizados o suspendidos y no venden entradas: capacidad 0.
+  return match.capacity ?? match.court?.capacity ?? 0;
 }
 
 export function toPublicMatch(match: MatchWithRelations) {
@@ -141,7 +234,7 @@ export function toPublicMatch(match: MatchWithRelations) {
 
   return {
     ...rest,
-    court: { id: court.id, name: court.name },
+    court: court ? { id: court.id, name: court.name } : null,
     soldOut: available <= 0,
   };
 }

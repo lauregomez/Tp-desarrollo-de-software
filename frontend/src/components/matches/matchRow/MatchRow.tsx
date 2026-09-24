@@ -8,7 +8,8 @@ import {
   TRANSITION_LABEL,
 } from '../../../types/match'
 import type { AdminMatch, MatchStatus } from '../../../types/match'
-import { formatPrice, formatShortDate, formatTime } from '../../../lib/format'
+import { formatPrice, formatShortDate, formatTime, clubName } from '../../../lib/format'
+
 
 // Input properties: el partido entra por props, MatchRow no lo pide al
 // servidor. Output properties: los callbacks avisan qué quiso hacer el
@@ -47,7 +48,7 @@ export default function MatchRow({
         {formatShortDate(match.startsAt)} · {formatTime(match.startsAt)} hs
       </td>
       <td className="px-3 py-2">
-        {match.homeClub.name} vs {match.awayClub.name}
+        {clubName(match.homeClub)} vs {clubName(match.awayClub)}
       </td>
       <td className="px-3 py-2">{CATEGORY_LABEL[match.category]}</td>
       <td className="px-3 py-2">{STATUS_LABEL[match.status]}</td>
@@ -92,7 +93,7 @@ export default function MatchRow({
         <ConfirmModal
           open={confirmOpen}
           title="Eliminar partido"
-          message={`¿Estás seguro de que querés eliminar "${match.homeClub.name} vs ${match.awayClub.name}"? Esta acción no se puede deshacer.`}
+          message={`¿Estás seguro de que querés eliminar "${clubName(match.homeClub)} vs ${clubName(match.awayClub)}"? Esta acción no se puede deshacer.`}
           confirmLabel="Eliminar"
           onConfirm={handleConfirmDelete}
           onCancel={() => setConfirmOpen(false)}

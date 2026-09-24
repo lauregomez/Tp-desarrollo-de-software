@@ -12,22 +12,44 @@ function isAdmin(req: AuthRequest): boolean {
   return req.user?.role === 'ADMIN';
 }
 
+// Un filtro puede venir una vez (?clubId=3) o repetido (?clubId=3&clubId=7):
+// Express lo entrega como string o como array. Acá lo normalizamos a lista.
+function toList(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter((v): v is string => typeof v === 'string' && v !== '');
+}
+
+// Lista de ids positivos. Devuelve null si alguno no es válido.
+function parseIds(value: unknown): number[] | null {
+  const ids = toList(value).map(Number);
+  return ids.every((id) => Number.isInteger(id) && id > 0) ? ids : null;
+}
+
 export const matchController = {
   async getAll(req: Request, res: Response): Promise<void> {
     const admin = isAdmin(req);
-    const { status, category, clubId, from, to } = req.query;
+    const { status, category, clubId, courtId, q, from, to } = req.query;
 
-    let statusFilter: MatchStatus | undefined = MatchStatus.PUBLISHED;
-
+    // Al público siempre se le muestran solo los publicados, pida lo que pida.
+    let statusFilter: MatchStatus[] = [MatchStatus.PUBLISHED];
     if (admin) {
-      statusFilter = undefined;
-      if (typeof status === 'string' && status !== '') {
-        if (!Object.values(MatchStatus).includes(status as MatchStatus)) {
-          res.status(400).json({ message: 'El estado indicado no es válido' });
-          return;
-        }
-        statusFilter = status as MatchStatus;
+      statusFilter = toList(status) as MatchStatus[];
+      if (statusFilter.some((s) => !Object.values(MatchStatus).includes(s))) {
+        res.status(400).json({ message: 'Alguno de los estados indicados no es válido' });
+        return;
       }
+    }
+
+    const clubIds = parseIds(clubId);
+    if (clubIds === null) {
+      res.status(400).json({ message: 'Alguno de los clubes indicados no es válido' });
+      return;
+    }
+
+    const courtIds = parseIds(courtId);
+    if (courtIds === null) {
+      res.status(400).json({ message: 'Alguna de las canchas indicadas no es válida' });
+      return;
     }
 
     let categoryFilter: Category | undefined;
@@ -39,14 +61,8 @@ export const matchController = {
       categoryFilter = category as Category;
     }
 
-    let clubFilter: number | undefined;
-    if (typeof clubId === 'string' && clubId !== '') {
-      clubFilter = Number(clubId);
-      if (!Number.isInteger(clubFilter) || clubFilter <= 0) {
-        res.status(400).json({ message: 'El club indicado no es válido' });
-        return;
-      }
-    }
+    // Texto libre: se ignora si viene vacío o con solo espacios.
+    const search = typeof q === 'string' && q.trim() !== '' ? q.trim() : undefined;
 
     let fromFilter: Date | undefined;
     if (typeof from === 'string' && from !== '') {
@@ -72,9 +88,11 @@ export const matchController = {
     }
 
     const matches = await matchService.findAll({
-      status: statusFilter,
+      statuses: statusFilter,
       category: categoryFilter,
-      clubId: clubFilter,
+      clubIds,
+      courtIds,
+      q: search,
       from: fromFilter,
       to: toFilter,
     });
@@ -389,7 +407,9 @@ export const matchController = {
       return;
     }
 
-    const updated = await matchService.update(id, { status: status as MatchStatus });
+    // La ruta usa authenticate + authorize('ADMIN'): el usuario siempre está.
+    const { user } = req as AuthRequest;
+    const updated = await matchService.changeStatus(id, status as MatchStatus, user!.userId);
     res.json(toAdminMatch(updated));
   },
 

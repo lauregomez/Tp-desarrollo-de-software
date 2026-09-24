@@ -6,9 +6,11 @@ export type CreateMatchDto = Prisma.MatchUncheckedCreateInput;
 export type UpdateMatchDto = Prisma.MatchUncheckedUpdateInput;
 
 export type MatchFilters = {
-  status?: MatchStatus;
+  statuses?: MatchStatus[];
   category?: Category;
-  clubId?: number;
+  clubIds?: number[];
+  courtIds?: number[];
+  q?: string;
   from?: Date;
   to?: Date;
 };

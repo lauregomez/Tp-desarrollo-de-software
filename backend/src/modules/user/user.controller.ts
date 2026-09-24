@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { userService } from './user.service';
 import { AuthRequest } from '../../middlewares/auth.types';
 import { canDeleteUser } from './user.types';
+import { isValidName, MIN_NAME_LENGTH } from './user.validations';
 
 export const userController = {
   async getAll(req: Request, res: Response): Promise<void> {
@@ -27,12 +28,16 @@ export const userController = {
   async create(req: Request, res: Response): Promise<void> {
     const { name, lastName, email, password, roleId } = req.body;
 
-    if (typeof name !== 'string' || name.trim() === '') {
-      res.status(400).json({ message: 'El campo nombre es obligatorio' });
+    if (typeof name !== 'string' || !isValidName(name)) {
+      res.status(400).json({
+        message: `El nombre debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
+      });
       return;
     }
-    if (typeof lastName !== 'string' || lastName.trim() === '') {
-      res.status(400).json({ message: 'El campo apellido es obligatorio' });
+    if (typeof lastName !== 'string' || !isValidName(lastName)) {
+      res.status(400).json({
+        message: `El apellido debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
+      });
       return;
     }
     if (typeof email !== 'string' || !email.includes('@')) {
@@ -85,17 +90,19 @@ export const userController = {
 
     const { name, lastName, email, roleId } = req.body;
 
-    if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
-      res.status(400).json({ message: 'El campo nombre no puede estar vacío' });
+    if (name !== undefined && (typeof name !== 'string' || !isValidName(name))) {
+      res.status(400).json({
+        message: `El nombre debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
+      });
       return;
     }
     if (
       lastName !== undefined &&
-      (typeof lastName !== 'string' || lastName.trim() === '')
+      (typeof lastName !== 'string' || !isValidName(lastName))
     ) {
-      res
-        .status(400)
-        .json({ message: 'El campo apellido no puede estar vacío' });
+      res.status(400).json({
+        message: `El apellido debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
+      });
       return;
     }
     if (email !== undefined && (typeof email !== 'string' || !email.includes('@'))) {

@@ -8,6 +8,7 @@ import userRouter from './modules/user/user.routes';
 import authRouter from './modules/auth/auth.routes';
 import ticketRoutes from './modules/ticket/ticket.routes';
 import paymentRoutes from './modules/payment/payment.routes';
+import matchLogRoutes from './modules/matchLog/matchLog.routes';
 import { errorHandler } from './middlewares/error.middleware';
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.get('/health', (req, res) => {
 app.use('/api/clubs', clubRoutes);
 app.use('/api/courts', courtRoutes);
 app.use('/api/matches', matchRoutes);
+app.use('/api/match-logs', matchLogRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/users', userRouter);
 app.use('/api/payments', paymentRoutes);

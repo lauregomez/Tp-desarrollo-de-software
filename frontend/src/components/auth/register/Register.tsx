@@ -5,7 +5,7 @@ import { ApiError } from '../../../lib/api'
 import { successToast } from '../../../shared/notifications'
 import { register } from './Register.server'
 import { initialRegisterData, initialRegisterErrors } from './Register.data'
-import { MIN_PASSWORD_LENGTH } from './Register.const'
+import { MIN_PASSWORD_LENGTH, isValidName } from '../auth.const'
 
 export default function Register() {
   const [form, setForm] = useState(initialRegisterData)
@@ -38,13 +38,13 @@ export default function Register() {
     // Validación de a un campo por vez: se marca el error, se enfoca el
     // input con la ref y se corta con return, así el cursor queda parado
     // justo en el campo que hay que corregir.
-    if (form.name.trim() === '') {
+    if (!isValidName(form.name)) {
       setErrors({ ...initialRegisterErrors, name: true })
       nameRef.current?.focus()
       return
     }
 
-    if (form.lastName.trim() === '') {
+    if (!isValidName(form.lastName)) {
       setErrors({ ...initialRegisterErrors, lastName: true })
       lastNameRef.current?.focus()
       return
@@ -96,9 +96,9 @@ export default function Register() {
   // El hint se arma a partir de los flags, mostrando el del primer
   // campo inválido.
   const hint = errors.name
-    ? 'Ingresá tu nombre.'
+    ? 'Ingresá un nombre válido, sin números.'
     : errors.lastName
-      ? 'Ingresá tu apellido.'
+      ? 'Ingresá un apellido válido, sin números.'
       : errors.email
         ? 'Ingresá un email válido.'
         : errors.password
