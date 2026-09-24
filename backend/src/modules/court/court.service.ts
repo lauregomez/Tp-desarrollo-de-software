@@ -1,5 +1,6 @@
 import { prisma } from '../../config/prisma';
 import { CreateCourtDto, UpdateCourtDto } from './court.types';
+import { Court } from '@prisma/client';
 
 export const courtService = {
     async findAll() {
@@ -21,3 +22,9 @@ export const courtService = {
         return prisma.court.delete({ where: { id } });
     },
 };
+
+// La capacidad es un dato interno: al público se le devuelve la cancha sin ella.
+export function toPublicCourt(court: Court) {
+  const { capacity, ...rest } = court;
+  return rest;
+}

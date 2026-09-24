@@ -103,3 +103,16 @@ export const TRANSITION_LABEL: Record<MatchStatus, string> = {
   FINISHED: 'Finalizar',
   CANCELLED: 'Cancelar',
 }
+
+// Filtros de GET /api/matches. Todos opcionales y acumulables:
+// el que queda undefined no se manda y el backend no filtra por él.
+// Filtros de GET /api/matches. Todos opcionales y acumulables.
+// Los que son listas admiten varias opciones a la vez: dentro de una
+// lista es un "o", y entre filtros distintos es un "y".
+export interface MatchFilterValues {
+  statuses?: MatchStatus[]
+  category?: Category
+  clubIds?: number[]
+  courtIds?: number[]
+  q?: string
+}

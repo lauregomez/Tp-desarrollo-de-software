@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router'
 import MatchRow from '../matchRow/MatchRow'
 import MatchForm from '../matchForm/MatchForm'
+import MatchFilters from '../matchFilters/MatchFilters'
 import PageNotFound from '../../pageNotFound/PageNotFound'
 import Button from '../../shared/button/Button'
 import EmptyState from '../../shared/emptyState/EmptyState'
 import { successToast, errorToast } from '../../../shared/notifications'
 import { getAdminMatches, deleteMatch, changeMatchStatus } from './MatchAdmin.server'
 import { createMatch, updateMatch } from '../matchForm/MatchForm.server'
-import type { AdminMatch, CreateMatchDto, MatchStatus } from '../../../types/match'
+import type { AdminMatch, CreateMatchDto, MatchStatus, MatchFilterValues } from '../../../types/match'
 
 
 
@@ -16,20 +17,32 @@ import type { AdminMatch, CreateMatchDto, MatchStatus } from '../../../types/mat
 export default function MatchAdmin() {
   const [matches, setMatches] = useState<AdminMatch[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  // Arranca en "Publicado": es lo que el admin gestiona el día a día.
+  const [filters, setFilters] = useState<MatchFilterValues>({ statuses: ['PUBLISHED'] })
   const navigate = useNavigate()
 
   useEffect(() => {
-    getAdminMatches({
+    // Descarta respuestas viejas si el filtro cambia antes de que lleguen.
+    let ignore = false
+    setIsLoading(true)
+
+    getAdminMatches(filters, {
       onSuccess: (data) => {
+        if (ignore) return
         setMatches(data)
         setIsLoading(false)
       },
       onError: (error) => {
+        if (ignore) return
         errorToast(error.message)
         setIsLoading(false)
       },
     })
-  }, [])
+
+    return () => {
+      ignore = true
+    }
+  }, [filters])
 
     const handleAdd = (match: CreateMatchDto, onFinish: () => void) => {
     createMatch(match, {
@@ -121,33 +134,41 @@ export default function MatchAdmin() {
         <Route
           index
           element={
-            isLoading ? (
-              <p className="text-muted">Cargando partidos…</p>
-            ) : rows.length > 0 ? (
-              // overflow-x-auto: en mobile la tabla scrollea sola
-              // en vez de romper el ancho de la página.
-              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-muted">
-                    <tr>
-                      <th className="px-3 py-2">Fecha</th>
-                      <th className="px-3 py-2">Partido</th>
-                      <th className="px-3 py-2">Categoría</th>
-                      <th className="px-3 py-2">Estado</th>
-                      <th className="px-3 py-2">Vendidas</th>
-                      <th className="px-3 py-2">Precio</th>
-                      <th className="px-3 py-2">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>{rows}</tbody>
-                </table>
-              </div>
-            ) : (
-              <EmptyState
-                title="Todavía no hay partidos"
-                message="Cargá el primero con el botón «Nuevo partido»."
-              />
-            )
+            <>
+              <MatchFilters filters={filters} onChange={setFilters} showStatus />
+
+              {isLoading && matches.length === 0 ? (
+                <p className="text-muted">Cargando partidos…</p>
+              ) : rows.length > 0 ? (
+                // overflow-x-auto: en mobile la tabla scrollea sola
+                // en vez de romper el ancho de la página.
+                <div
+                  className={`overflow-x-auto rounded-xl border border-slate-200 bg-white transition-opacity ${
+                    isLoading ? 'opacity-50' : ''
+                  }`}
+                >
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-muted">
+                      <tr>
+                        <th className="px-3 py-2">Fecha</th>
+                        <th className="px-3 py-2">Partido</th>
+                        <th className="px-3 py-2">Categoría</th>
+                        <th className="px-3 py-2">Estado</th>
+                        <th className="px-3 py-2">Vendidas</th>
+                        <th className="px-3 py-2">Precio</th>
+                        <th className="px-3 py-2">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>{rows}</tbody>
+                  </table>
+                </div>
+              ) : (
+                <EmptyState
+                  title="No hay partidos con esos filtros"
+                  message="Probá con otro estado, club, cancha o búsqueda."
+                />
+              )}
+            </>
           }
         />
 

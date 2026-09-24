@@ -1,13 +1,17 @@
 import { apiFetch } from '../../../lib/api'
 import type { Callbacks } from '../../../lib/api'
-import type { AdminMatch, MatchStatus } from '../../../types/match'
+import type { AdminMatch, MatchStatus, MatchFilterValues } from '../../../types/match'
+import { buildMatchQuery } from '../matchFilters/MatchFilters.server'
 
 const RESOURCE = '/matches'
 
 // Con token de ADMIN el backend devuelve todos los estados
 // (no sólo PUBLISHED) y usa la proyección toAdminMatch.
-export const getAdminMatches = ({ onSuccess, onError }: Callbacks<AdminMatch[]>) => {
-  apiFetch<AdminMatch[]>(RESOURCE)
+export const getAdminMatches = (
+  filters: MatchFilterValues,
+  { onSuccess, onError }: Callbacks<AdminMatch[]>,
+) => {
+  apiFetch<AdminMatch[]>(`${RESOURCE}${buildMatchQuery(filters)}`)
     .then(onSuccess)
     .catch(onError)
 }
