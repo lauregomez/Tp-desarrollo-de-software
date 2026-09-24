@@ -179,6 +179,19 @@ export const matchController = {
       return;
     }
 
+    const clubConflict = await matchService.findClubDayConflict({
+      homeClubId,
+      awayClubId,
+      category: category as Category,
+      startsAt: date,
+    });
+    if (clubConflict) {
+      res.status(409).json({
+        message: 'Uno de los clubes ya tiene un partido de esa categoría ese día',
+      });
+      return;
+    }
+
     const match = await matchService.create({
       startsAt: date,
       price,
@@ -302,6 +315,28 @@ export const matchController = {
       if (conflict) {
         res.status(409).json({
           message: 'Ya hay un partido programado en esa cancha en ese horario',
+        });
+        return;
+      }
+    }
+
+    // Solo se revisa si cambió algo que afecte la regla: fecha, categoría o clubes.
+    if (
+      date !== undefined ||
+      category !== undefined ||
+      homeClubId !== undefined ||
+      awayClubId !== undefined
+    ) {
+      const clubConflict = await matchService.findClubDayConflict({
+        homeClubId: finalHomeClubId,
+        awayClubId: finalAwayClubId,
+        category: (category as Category | undefined) ?? current.category,
+        startsAt: date ?? current.startsAt,
+        excludeId: id,
+      });
+      if (clubConflict) {
+        res.status(409).json({
+          message: 'Uno de los clubes ya tiene un partido de esa categoría ese día',
         });
         return;
       }
