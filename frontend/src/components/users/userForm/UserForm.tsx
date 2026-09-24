@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router'
-
+import { isValidName } from '../../auth/auth.const'
 import Button from '../../shared/button/Button'
 import { errorToast } from '../../../shared/notifications'
 import { getUser } from './UserForm.server'
@@ -84,8 +84,12 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
 
     // Validaciones de forma. El email duplicado (409) lo detecta
     // el backend y llega por el onError de UserList.
-    if (!form.name.trim()) return setError('El nombre es obligatorio')
-    if (!form.lastName.trim()) return setError('El apellido es obligatorio')
+    if (!isValidName(form.name)) {
+      return setError('Ingresá un nombre válido, sin números')
+    }
+    if (!isValidName(form.lastName)) {
+      return setError('Ingresá un apellido válido, sin números')
+    }
     if (!form.email.includes('@')) return setError('El email no es válido')
     if (!form.roleId) return setError('El rol es obligatorio')
 

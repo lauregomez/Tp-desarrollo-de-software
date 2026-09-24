@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { authService } from './auth.service';
 import { userService } from '../user/user.service';
 import { prisma } from '../../config/prisma';
+import { isValidName, MIN_NAME_LENGTH } from '../user/user.validations';
 
 export const authController = {
   async login(req: Request, res: Response): Promise<void> {
@@ -26,12 +27,16 @@ export const authController = {
   async register(req: Request, res: Response): Promise<void> {
     const { name, lastName, email, password } = req.body;
 
-    if (typeof name !== 'string' || name.trim() === '') {
-      res.status(400).json({ message: 'El campo nombre es obligatorio' });
+    if (typeof name !== 'string' || !isValidName(name)) {
+      res.status(400).json({
+        message: `El nombre debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
+      });
       return;
     }
-    if (typeof lastName !== 'string' || lastName.trim() === '') {
-      res.status(400).json({ message: 'El campo apellido es obligatorio' });
+    if (typeof lastName !== 'string' || !isValidName(lastName)) {
+      res.status(400).json({
+        message: `El apellido debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
+      });
       return;
     }
     if (typeof email !== 'string' || !email.includes('@')) {
