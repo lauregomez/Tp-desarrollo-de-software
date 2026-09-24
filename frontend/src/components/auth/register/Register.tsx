@@ -5,7 +5,7 @@ import { ApiError } from '../../../lib/api'
 import { successToast } from '../../../shared/notifications'
 import { register } from './Register.server'
 import { initialRegisterData, initialRegisterErrors } from './Register.data'
-import { MIN_PASSWORD_LENGTH } from './Register.const'
+import { MIN_PASSWORD_LENGTH } from '../auth.const'
 
 export default function Register() {
   const [form, setForm] = useState(initialRegisterData)

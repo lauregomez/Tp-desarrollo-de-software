@@ -4,7 +4,7 @@ import { useLocation, useNavigate, Link } from 'react-router'
 import { useAuth } from '../../../context/useAuth'
 import { ApiError } from '../../../lib/api'
 import { initialLoginData, initialLoginErrors } from './Login.data'
-import { MIN_PASSWORD_LENGTH } from './Login.const'
+import { MIN_PASSWORD_LENGTH } from '../auth.const'
 
 
 export default function Login() {
