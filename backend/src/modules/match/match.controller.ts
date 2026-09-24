@@ -407,7 +407,9 @@ export const matchController = {
       return;
     }
 
-    const updated = await matchService.update(id, { status: status as MatchStatus });
+    // La ruta usa authenticate + authorize('ADMIN'): el usuario siempre está.
+    const { user } = req as AuthRequest;
+    const updated = await matchService.changeStatus(id, status as MatchStatus, user!.userId);
     res.json(toAdminMatch(updated));
   },
 
