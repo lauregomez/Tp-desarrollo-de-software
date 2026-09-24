@@ -8,8 +8,6 @@ import {
 } from './match.service';
 import { isValidTransition } from './match.types';
 
-
-
 function isAdmin(req: AuthRequest): boolean {
   return req.user?.role === 'ADMIN';
 }
@@ -19,7 +17,6 @@ export const matchController = {
     const admin = isAdmin(req);
     const { status, category, clubId, from, to } = req.query;
 
-    
     let statusFilter: MatchStatus | undefined = MatchStatus.PUBLISHED;
 
     if (admin) {
@@ -100,7 +97,6 @@ export const matchController = {
       return;
     }
 
-    
     if (!isAdmin(req) && match.status !== MatchStatus.PUBLISHED) {
       res.status(404).json({ message: 'Partido no encontrado' });
       return;
@@ -153,7 +149,6 @@ export const matchController = {
       return;
     }
 
-    
     if (capacity !== undefined && capacity !== null) {
       if (!Number.isInteger(capacity) || capacity <= 0) {
         res.status(400).json({ message: 'La capacidad debe ser un número entero positivo' });
@@ -228,7 +223,6 @@ export const matchController = {
     const { startsAt, price, category, capacity, homeClubId, awayClubId, courtId } = req.body;
     const hasTickets = current._count.tickets > 0;
 
-    
     if (hasTickets && (price !== undefined || courtId !== undefined)) {
       res.status(409).json({
         message: 'No se puede cambiar el precio ni la cancha de un partido con entradas vendidas',
@@ -366,7 +360,6 @@ export const matchController = {
     }
   },
 
-  
   async changeStatus(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
 
@@ -415,7 +408,6 @@ export const matchController = {
       return;
     }
 
-    
     if (match.status !== MatchStatus.DRAFT) {
       res.status(409).json({
         message: 'Sólo se pueden eliminar partidos en estado borrador',

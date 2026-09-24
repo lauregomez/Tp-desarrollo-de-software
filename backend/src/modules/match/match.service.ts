@@ -2,7 +2,6 @@ import { prisma } from '../../config/prisma';
 import { Category, MatchStatus, TicketStatus } from '@prisma/client';
 import { CreateMatchDto, UpdateMatchDto, MatchFilters } from './match.types';
 
-
 const MATCH_DURATION_MINUTES = 50;
 
 // Argentina es UTC-3 todo el año (no tiene horario de verano desde 2009).
@@ -90,7 +89,6 @@ export const matchService = {
     return prisma.match.delete({ where: { id } });
   },
 
-  
   async findCourtCapacity(courtId: number) {
     const court = await prisma.court.findUnique({
       where: { id: courtId },
@@ -99,7 +97,6 @@ export const matchService = {
     return court ? court.capacity : null;
   },
 
-  
   async findCourtConflict(courtId: number, startsAt: Date, excludeId?: number) {
     const durationMs = MATCH_DURATION_MINUTES * 60 * 1000;
 
@@ -143,11 +140,9 @@ export const matchService = {
 
 type MatchWithRelations = NonNullable<Awaited<ReturnType<typeof matchService.findById>>>;
 
-
 export function resolveCapacity(match: MatchWithRelations): number {
   return match.capacity ?? match.court.capacity;
 }
-
 
 export function toPublicMatch(match: MatchWithRelations) {
   const available = resolveCapacity(match) - match._count.tickets;
@@ -159,7 +154,6 @@ export function toPublicMatch(match: MatchWithRelations) {
     soldOut: available <= 0,
   };
 }
-
 
 export function toAdminMatch(match: MatchWithRelations) {
   const capacity = resolveCapacity(match);
