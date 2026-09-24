@@ -1,4 +1,5 @@
 import { Prisma, Ticket, TicketStatus } from '@prisma/client';
+  export const SOLD_STATUSES: TicketStatus[] = [TicketStatus.ACTIVE, TicketStatus.USED];
 
 export type { Ticket, TicketStatus };
 

@@ -9,6 +9,7 @@ import {
   ReserveFailureReason,
   ServiceResult,
   MAX_TICKETS_PER_USER_PER_MATCH,
+  SOLD_STATUSES,
 } from './ticket.types';
 
 /**
@@ -40,12 +41,6 @@ const TICKET_INCLUDE = {
 export type TicketWithRelations = Prisma.TicketGetPayload<{
   include: typeof TICKET_INCLUDE;
 }>;
-
-// Estados que ocupan lugar: sólo las entradas pagas. Una PENDING es un
-// intento de compra que puede no concretarse nunca, así que no cuenta ni
-// para el cupo del partido ni para el límite por usuario. Por eso tampoco
-// hace falta vencerlas ni borrarlas: no le quitan el lugar a nadie.
-const SOLD_STATUSES: TicketStatus[] = [TicketStatus.ACTIVE, TicketStatus.USED];
 
 
 const CODE_ALPHABET = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ0123456789';
