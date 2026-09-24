@@ -190,24 +190,19 @@ export const clubController = {
       res.status(400).json({ message: 'El id debe ser un número' });
       return;
     }
-    try {
-      await clubService.remove(id);
-      res.status(204).send();
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          res.status(404).json({ message: 'Club no encontrado' });
-          return;
-        }
-        if (error.code === 'P2003') {
-          res.status(409).json({
-            message:
-              'No se puede eliminar el club porque tiene canchas o partidos asociados',
-          });
-          return;
-        }
-      }
-      throw error;
+    const result = await clubService.remove(id);
+
+    if (result === 'NOT_FOUND') {
+      res.status(404).json({ message: 'Club no encontrado' });
+      return;
     }
+    if (result === 'HAS_PUBLISHED_MATCHES') {
+      res.status(409).json({
+        message:
+          'No se puede eliminar el club porque tiene partidos publicados, como local, visitante o en alguna de sus canchas',
+      });
+      return;
+    }
+    res.status(204).send();
   },
 };
