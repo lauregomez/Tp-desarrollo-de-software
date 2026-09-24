@@ -164,7 +164,9 @@ export const matchService = {
 type MatchWithRelations = NonNullable<Awaited<ReturnType<typeof matchService.findById>>>;
 
 export function resolveCapacity(match: MatchWithRelations): number {
-  return match.capacity ?? match.court.capacity;
+  // Sin cancha solo quedan partidos cuya cancha se borró, que ya están
+  // finalizados o suspendidos y no venden entradas: capacidad 0.
+  return match.capacity ?? match.court?.capacity ?? 0;
 }
 
 export function toPublicMatch(match: MatchWithRelations) {
@@ -173,7 +175,7 @@ export function toPublicMatch(match: MatchWithRelations) {
 
   return {
     ...rest,
-    court: { id: court.id, name: court.name },
+    court: court ? { id: court.id, name: court.name } : null,
     soldOut: available <= 0,
   };
 }
