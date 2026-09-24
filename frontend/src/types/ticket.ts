@@ -1,12 +1,23 @@
 import type {
   Category,
   ClubSummary,
-  CourtSummary,
   MatchStatus,
 } from './match'
 
 // Estados posibles de una entrada, espejo del enum TicketStatus del backend.
 export type TicketStatus = 'PENDING' | 'ACTIVE' | 'USED'
+
+
+// La cancha tal como viene dentro de una entrada. No reutiliza
+// CourtSummary de match.ts porque esa proyección no trae address:
+// compartir el tipo haría que match.ts declare un campo que su API
+// no devuelve. address es String en el schema, nunca null.
+export interface TicketCourt {
+  id: number
+  name: string
+  address: string
+}
+
 
 // El partido que viaja anidado dentro de la entrada. No es PublicMatch:
 // esta proyección no trae soldOut y sí trae el estado del partido.
@@ -18,7 +29,7 @@ export interface TicketMatch {
   status: MatchStatus
   homeClub: ClubSummary
   awayClub: ClubSummary
-  court: CourtSummary
+  court: TicketCourt
 }
 
 // Una entrada del usuario logueado (GET /api/tickets/me y /api/tickets/:id).

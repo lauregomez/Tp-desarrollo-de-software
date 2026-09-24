@@ -26,7 +26,7 @@ const TICKET_INCLUDE = {
     include: {
       homeClub: { select: { id: true, name: true } },
       awayClub: { select: { id: true, name: true } },
-      court: { select: { id: true, name: true } },
+      court: { select: { id: true, name: true, address: true } },
     },
   },
   user: { select: { id: true, name: true, lastName: true, email: true } },

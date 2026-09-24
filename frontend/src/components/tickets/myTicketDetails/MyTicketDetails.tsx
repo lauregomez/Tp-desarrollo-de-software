@@ -71,6 +71,10 @@ export default function MyTicketDetails() {
           <dd className="inline">{match.court.name}</dd>
         </div>
         <div>
+          <dt className="inline">Dirección: </dt>
+          <dd className="inline">{match.court.address}</dd>
+        </div>
+        <div>
           <dt className="inline">Estado: </dt>
           <dd className="inline">{TICKET_STATUS_LABEL[ticket.status]}</dd>
         </div>
