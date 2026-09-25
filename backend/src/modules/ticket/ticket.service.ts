@@ -10,6 +10,7 @@ import {
   ServiceResult,
   MAX_TICKETS_PER_USER_PER_MATCH,
   SOLD_STATUSES,
+  ValidateFailureReason,
 } from './ticket.types';
 
 /**
@@ -327,9 +328,9 @@ export const ticketService = {
    * Marca una entrada como usada al ingresar al evento.
    *
    * La condición `status: ACTIVE` dentro del where es lo que evita el doble
-   * uso: si dos operadores escanean el mismo código simultáneamente, el segundo
-   * update no encuentra fila y Prisma lanza P2025, que el controller
-   * traduce a 409.
+   * uso: si dos operadores validan el mismo código simultáneamente, el segundo
+   * update no encuentra fila y Prisma lanza P2025, que validate
+   * traduce a TICKET_ALREADY_USED.
    */
   async markAsUsed(id: number): Promise<TicketWithRelations> {
     return prisma.ticket.update({
@@ -337,6 +338,45 @@ export const ticketService = {
       data: { status: TicketStatus.USED },
       include: TICKET_INCLUDE,
     });
+  },
+
+  /**
+   * Caso de uso del operador en la puerta.
+   * Los chequeos previos existen para devolver un motivo preciso; la
+   * garantía real contra el doble uso es el update condicional de markAsUsed.
+   */
+  async validate(
+    matchId: number,
+    code: string,
+  ): Promise<ServiceResult<TicketWithRelations, ValidateFailureReason>> {
+    const ticket = await this.findByCode(matchId, code);
+
+    if (!ticket) {
+      return { ok: false, reason: 'TICKET_NOT_FOUND' };
+    }
+    if (ticket.status === TicketStatus.USED) {
+      return { ok: false, reason: 'TICKET_ALREADY_USED' };
+    }
+    if (ticket.status !== TicketStatus.ACTIVE) {
+      return { ok: false, reason: 'TICKET_NOT_PAID' };
+    }
+    if (ticket.match.status !== MatchStatus.PUBLISHED) {
+      return { ok: false, reason: 'MATCH_NOT_PUBLISHED' };
+    }
+
+    try {
+      const used = await this.markAsUsed(ticket.id);
+      return { ok: true, data: used };
+    } catch (error) {
+      // P2025: otro operador la validó entre el chequeo y el update.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        return { ok: false, reason: 'TICKET_ALREADY_USED' };
+      }
+      throw error;
+    }
   },
 
   async create(dto: CreateTicketDto): Promise<TicketWithRelations> {
