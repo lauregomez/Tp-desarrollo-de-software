@@ -1,9 +1,13 @@
-import { Request, Response } from 'express';
-import { Prisma } from '@prisma/client';
-import { userService } from './user.service';
-import { AuthRequest } from '../../middlewares/auth.types';
-import { canDeleteUser } from './user.types';
-import { isValidName, MIN_NAME_LENGTH } from './user.validations';
+import { Request, Response } from "express";
+import { Prisma } from "@prisma/client";
+import { userService } from "./user.service";
+import { AuthRequest } from "../../middlewares/auth.types";
+import { canDeleteUser } from "./user.types";
+import {
+  isValidName,
+  MIN_NAME_LENGTH,
+  keepsAtLeastOneAdmin,
+} from "./user.validations";
 
 export const userController = {
   async getAll(req: Request, res: Response): Promise<void> {
@@ -14,12 +18,12 @@ export const userController = {
   async getById(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
-      res.status(400).json({ message: 'El id debe ser un número' });
+      res.status(400).json({ message: "El id debe ser un número" });
       return;
     }
     const user = await userService.findById(id);
     if (!user) {
-      res.status(404).json({ message: 'Usuario no encontrado' });
+      res.status(404).json({ message: "Usuario no encontrado" });
       return;
     }
     res.json(user);
@@ -28,30 +32,30 @@ export const userController = {
   async create(req: Request, res: Response): Promise<void> {
     const { name, lastName, email, password, roleId } = req.body;
 
-    if (typeof name !== 'string' || !isValidName(name)) {
+    if (typeof name !== "string" || !isValidName(name)) {
       res.status(400).json({
         message: `El nombre debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
       });
       return;
     }
-    if (typeof lastName !== 'string' || !isValidName(lastName)) {
+    if (typeof lastName !== "string" || !isValidName(lastName)) {
       res.status(400).json({
         message: `El apellido debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
       });
       return;
     }
-    if (typeof email !== 'string' || !email.includes('@')) {
-      res.status(400).json({ message: 'El email no es válido' });
+    if (typeof email !== "string" || !email.includes("@")) {
+      res.status(400).json({ message: "El email no es válido" });
       return;
     }
-    if (typeof password !== 'string' || password.length < 8) {
+    if (typeof password !== "string" || password.length < 8) {
       res
         .status(400)
-        .json({ message: 'La contraseña debe tener al menos 8 caracteres' });
+        .json({ message: "La contraseña debe tener al menos 8 caracteres" });
       return;
     }
     if (!Number.isInteger(roleId)) {
-      res.status(400).json({ message: 'El rol es obligatorio' });
+      res.status(400).json({ message: "El rol es obligatorio" });
       return;
     }
 
@@ -66,14 +70,14 @@ export const userController = {
       res.status(201).json(user);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
+        if (error.code === "P2002") {
           res
             .status(409)
-            .json({ message: 'Ya existe un usuario con ese email' });
+            .json({ message: "Ya existe un usuario con ese email" });
           return;
         }
-        if (error.code === 'P2003') {
-          res.status(400).json({ message: 'El rol indicado no existe' });
+        if (error.code === "P2003") {
+          res.status(400).json({ message: "El rol indicado no existe" });
           return;
         }
       }
@@ -84,33 +88,62 @@ export const userController = {
   async update(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
-      res.status(400).json({ message: 'El id debe ser un número' });
+      res.status(400).json({ message: "El id debe ser un número" });
       return;
     }
 
     const { name, lastName, email, roleId } = req.body;
 
-    if (name !== undefined && (typeof name !== 'string' || !isValidName(name))) {
+    if (
+      name !== undefined &&
+      (typeof name !== "string" || !isValidName(name))
+    ) {
       res.status(400).json({
         message: `El nombre debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
       });
       return;
     }
+        // Cambiarle el rol al último ADMIN deja el sistema sin administración,
+    // igual que eliminarlo. Es el mismo agujero por otra vía, así que
+    // aplica la misma regla.
+    if (roleId !== undefined) {
+      const targetRole = await userService.findRoleName(id);
+
+      if (targetRole === 'ADMIN') {
+        // Sólo importa si el rol nuevo NO es ADMIN: reasignarle el mismo
+        // rol no cambia el conteo.
+        const adminRole = await userService.findRoleIdByName('ADMIN');
+
+        if (roleId !== adminRole) {
+          const adminCount = await userService.countAdmins();
+          if (!keepsAtLeastOneAdmin(true, adminCount)) {
+            res.status(409).json({
+              message:
+                'No se puede quitar el rol de administrador al único que queda',
+            });
+            return;
+          }
+        }
+      }
+    }
     if (
       lastName !== undefined &&
-      (typeof lastName !== 'string' || !isValidName(lastName))
+      (typeof lastName !== "string" || !isValidName(lastName))
     ) {
       res.status(400).json({
         message: `El apellido debe tener al menos ${MIN_NAME_LENGTH} letras y no puede contener números`,
       });
       return;
     }
-    if (email !== undefined && (typeof email !== 'string' || !email.includes('@'))) {
-      res.status(400).json({ message: 'El email no es válido' });
+    if (
+      email !== undefined &&
+      (typeof email !== "string" || !email.includes("@"))
+    ) {
+      res.status(400).json({ message: "El email no es válido" });
       return;
     }
     if (roleId !== undefined && !Number.isInteger(roleId)) {
-      res.status(400).json({ message: 'El rol no es válido' });
+      res.status(400).json({ message: "El rol no es válido" });
       return;
     }
 
@@ -124,18 +157,18 @@ export const userController = {
       res.json(user);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          res.status(404).json({ message: 'Usuario no encontrado' });
+        if (error.code === "P2025") {
+          res.status(404).json({ message: "Usuario no encontrado" });
           return;
         }
-        if (error.code === 'P2002') {
+        if (error.code === "P2002") {
           res
             .status(409)
-            .json({ message: 'Ya existe un usuario con ese email' });
+            .json({ message: "Ya existe un usuario con ese email" });
           return;
         }
-        if (error.code === 'P2003') {
-          res.status(400).json({ message: 'El rol indicado no existe' });
+        if (error.code === "P2003") {
+          res.status(400).json({ message: "El rol indicado no existe" });
           return;
         }
       }
@@ -146,7 +179,7 @@ export const userController = {
   async remove(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
-      res.status(400).json({ message: 'El id debe ser un número' });
+      res.status(400).json({ message: "El id debe ser un número" });
       return;
     }
 
@@ -156,22 +189,34 @@ export const userController = {
     // igual que las rutas protegidas por authorize.
     const { user } = req as AuthRequest;
     if (user && !canDeleteUser(id, user.userId)) {
-      res.status(409).json({ message: 'No podés eliminar tu propio usuario' });
+      res.status(409).json({ message: "No podés eliminar tu propio usuario" });
       return;
     }
-
+    // No se puede eliminar al último ADMIN: el sistema quedaría sin
+    // nadie que administre y no habría forma de recuperarlo desde la app.
+    const targetRole = await userService.findRoleName(id);
+    if (targetRole === "ADMIN") {
+      const adminCount = await userService.countAdmins();
+      if (!keepsAtLeastOneAdmin(true, adminCount)) {
+        res.status(409).json({
+          message: "No se puede eliminar al único administrador del sistema",
+        });
+        return;
+      }
+    }
     try {
       await userService.remove(id);
       res.status(204).send();
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          res.status(404).json({ message: 'Usuario no encontrado' });
+        if (error.code === "P2025") {
+          res.status(404).json({ message: "Usuario no encontrado" });
           return;
         }
-        if (error.code === 'P2003') {
+        if (error.code === "P2003") {
           res.status(409).json({
-            message: 'No se puede eliminar: el usuario tiene entradas asociadas',
+            message:
+              "No se puede eliminar: el usuario tiene entradas asociadas",
           });
           return;
         }
