@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isValidName, MAX_NAME_LENGTH } from '../../src/modules/user/user.validations';
-
+import {isValidName, MAX_NAME_LENGTH, keepsAtLeastOneAdmin} from '../../src/modules/user/user.validations';
 describe('isValidName', () => {
   // it.each corre el mismo test una vez por cada valor de la lista.
   it.each([
@@ -35,5 +34,23 @@ describe('isValidName', () => {
     // MySQL cortaría o fallaría con un error poco claro: mejor un 400
     // con un mensaje que el usuario entienda.
     expect(isValidName('a'.repeat(MAX_NAME_LENGTH + 1))).toBe(false);
+  });
+});
+
+describe('keepsAtLeastOneAdmin', () => {
+  it('permite la operación si el usuario afectado no es admin', () => {
+    // Sacar a un USER no cambia cuántos admins quedan.
+    expect(keepsAtLeastOneAdmin(false, 1)).toBe(true);
+  });
+
+  it('permite sacar a un admin si hay más de uno', () => {
+    expect(keepsAtLeastOneAdmin(true, 3)).toBe(true);
+    expect(keepsAtLeastOneAdmin(true, 2)).toBe(true);
+  });
+
+  it('no deja sacar al último admin', () => {
+    // Sin administradores nadie puede entrar al panel, y no hay forma
+    // de recuperarlo desde la aplicación.
+    expect(keepsAtLeastOneAdmin(true, 1)).toBe(false);
   });
 });
