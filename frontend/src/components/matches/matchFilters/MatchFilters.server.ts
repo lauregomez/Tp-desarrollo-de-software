@@ -18,7 +18,7 @@ export const getCourtOptions = ({ onSuccess, onError }: Callbacks<CourtSummary[]
 
 // Arma el query string de GET /api/matches salteando los filtros vacíos.
 // Las listas van como parámetro repetido (?clubId=3&clubId=7): Express
-// las recibe como array. La usan el listado y Gestión.
+// las recibe como array. La usan el listado, Gestión y la validación.
 export function buildMatchQuery(filters: MatchFilterValues): string {
   const params = new URLSearchParams()
 
@@ -27,6 +27,8 @@ export function buildMatchQuery(filters: MatchFilterValues): string {
   filters.courtIds?.forEach((id) => params.append('courtId', String(id)))
   if (filters.category) params.set('category', filters.category)
   if (filters.q) params.set('q', filters.q)
+  if (filters.from) params.set('from', filters.from)
+  if (filters.to) params.set('to', filters.to)
 
   const query = params.toString()
   return query ? `?${query}` : ''
