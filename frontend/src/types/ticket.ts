@@ -38,9 +38,8 @@ export interface TicketMatch {
 // userId sí viaja, como cualquier otra clave foránea.
 export interface Ticket {
   id: number
-    // Código alfanumérico que el asistente le dicta al operador en la
-  // cancha. Se genera al confirmarse el pago: mientras la entrada está
-  // PENDING todavía no existe, por eso puede ser null.
+  // Código alfanumérico que el asistente le dicta al operador en la
+  // cancha. Se genera al confirmarse el pago: mientras la entrada
   // está PENDING todavía no existe, por eso puede ser null.
   code: string | null
   status: TicketStatus
@@ -53,6 +52,31 @@ export interface Ticket {
   matchId: number
   userId: number
   match: TicketMatch
+}
+
+// Titular de la entrada: los campos que el backend selecciona
+// explícitamente en TICKET_INCLUDE. Nunca viaja el hash de la contraseña.
+export interface TicketHolder {
+  id: number
+  name: string
+  lastName: string
+  email: string
+}
+
+// La entrada vista por el operador (toOperatorTicket en el backend):
+// suma el titular para confirmar a nombre de quién está, y nunca trae
+// el precio pagado. Omit en vez de repetir campos para que cualquier
+// cambio en Ticket se herede acá.
+export interface OperatorTicket extends Omit<Ticket, 'pricePaid'> {
+  user: TicketHolder
+}
+
+// Respuesta exitosa de POST /api/tickets/validate. valid es literal true:
+// ante 400/404/409 apiFetch lanza ApiError, así que por onSuccess nunca
+// llega un false.
+export interface ValidateTicketResponse {
+  valid: true
+  ticket: OperatorTicket
 }
 
 // Etiquetas en español, igual que CATEGORY_LABEL y STATUS_LABEL de match.ts.
