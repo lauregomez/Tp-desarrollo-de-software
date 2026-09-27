@@ -38,3 +38,19 @@ export function isValidName(value: string): boolean {
 
   return NAME_PATTERN.test(trimmed);
 }
+
+/**
+ * El sistema siempre tiene que conservar al menos un ADMIN: si se van
+ * todos, nadie puede entrar al panel y no hay forma de recuperarlo
+ * desde la aplicación.
+ *
+ * Sólo importa cuando la operación saca a un ADMIN del conjunto: si el
+ * usuario afectado no es admin, el conteo no cambia.
+ */
+export function keepsAtLeastOneAdmin(
+  targetIsAdmin: boolean,
+  adminCount: number,
+): boolean {
+  if (!targetIsAdmin) return true;
+  return adminCount > 1;
+}
