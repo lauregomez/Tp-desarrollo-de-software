@@ -128,7 +128,7 @@ export default function TicketValidation() {
               </option>
               {matches.map((match) => (
                 <option key={match.id} value={match.id}>
-                  {`${formatTime(match.startsAt)} · ${clubName(match.homeClub)} vs ${clubName(match.awayClub)} · ${courtName(match.court)}`}
+                  {`${formatTime(match.startsAt)} · ${courtName(match.court)} · ${clubName(match.homeClub)} vs ${clubName(match.awayClub)}`}
                 </option>
               ))}
             </select>
