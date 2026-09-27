@@ -43,6 +43,17 @@ export type ReserveFailureReason =
   | 'USER_LIMIT_EXCEEDED'
   | 'NOT_ENOUGH_CAPACITY';
 
+  /**
+ * Motivos por los que el operador no puede dar por válida una entrada.
+ * TICKET_ALREADY_USED cubre también el caso en que otro operador la
+ * validó en simultáneo: para quien está en la puerta el resultado es el mismo.
+ */
+export type ValidateFailureReason =
+  | 'TICKET_NOT_FOUND'
+  | 'TICKET_ALREADY_USED'
+  | 'TICKET_NOT_PAID'
+  | 'MATCH_NOT_PUBLISHED';
+
 /**
  * Union discriminada: TypeScript obliga a chequear `ok` antes de acceder
  * a `data`, así que es imposible olvidarse de manejar el caso de error.

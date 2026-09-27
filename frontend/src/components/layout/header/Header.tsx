@@ -38,6 +38,14 @@ export default function Header() {
             </NavLink>
           )}
 
+          {/* La usa el OPERATOR en la puerta y el ADMIN también puede.
+              Igual que abajo: es UX, el backend valida el rol. */}
+          {(user?.role === "OPERATOR" || user?.role === "ADMIN") && (
+            <NavLink to="/validar-entradas" className={linkClass}>
+              Validar entradas
+            </NavLink>
+          )}
+
           {/* Esconder el link es UX, no seguridad: el backend rechaza
               igual a quien no sea ADMIN. Evita mostrar una opción
               que terminaría en un error. */}

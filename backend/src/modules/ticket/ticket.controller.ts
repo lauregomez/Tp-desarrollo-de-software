@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Prisma, TicketStatus, MatchStatus } from '@prisma/client';
+import { TicketStatus } from '@prisma/client';
 import { AuthRequest } from '../../middlewares/auth.types';
 import { ReserveTicketDto, SOLD_STATUSES } from './ticket.types';
 import {
@@ -10,6 +10,7 @@ import {
 import {
   MAX_TICKETS_PER_USER_PER_MATCH,
   ReserveFailureReason,
+  ValidateFailureReason,
 } from './ticket.types';
 
 /**
@@ -42,6 +43,31 @@ const RESERVE_ERRORS: Record<
   NOT_ENOUGH_CAPACITY: {
     status: 409,
     message: 'No hay entradas suficientes disponibles',
+  },
+};
+
+/**
+ * Misma idea que RESERVE_ERRORS, para la validación en la puerta.
+ */
+const VALIDATE_ERRORS: Record<
+  ValidateFailureReason,
+  { status: number; message: string }
+> = {
+  TICKET_NOT_FOUND: {
+    status: 404,
+    message: 'No existe una entrada con ese código para este partido',
+  },
+  TICKET_ALREADY_USED: {
+    status: 409,
+    message: 'La entrada ya fue utilizada',
+  },
+  TICKET_NOT_PAID: {
+    status: 409,
+    message: 'La entrada no está paga',
+  },
+  MATCH_NOT_PUBLISHED: {
+    status: 409,
+    message: 'El partido no está habilitado',
   },
 };
 
@@ -198,50 +224,15 @@ export const ticketController = {
     // entrada válida porque el operador la tipeó en minúsculas.
     const normalizedCode = code.trim().toUpperCase();
 
-    const ticket = await ticketService.findByCode(matchId, normalizedCode);
+    const result = await ticketService.validate(matchId, normalizedCode);
 
-    if (!ticket) {
-      res
-        .status(404)
-        .json({ message: 'No existe una entrada con ese código para este partido', valid: false });
+    if (!result.ok) {
+      const error = VALIDATE_ERRORS[result.reason];
+      res.status(error.status).json({ message: error.message, valid: false });
       return;
     }
 
-    if (ticket.status === TicketStatus.USED) {
-      res
-        .status(409)
-        .json({ message: 'La entrada ya fue utilizada', valid: false });
-      return;
-    }
-
-    if (ticket.status !== TicketStatus.ACTIVE) {
-      res.status(409).json({ message: 'La entrada no está paga', valid: false });
-      return;
-    }
-
-    if (ticket.match.status !== MatchStatus.PUBLISHED) {
-      res
-        .status(409)
-        .json({ message: 'El partido no está habilitado', valid: false });
-      return;
-    }
-
-    try {
-      const used = await ticketService.markAsUsed(ticket.id);
-      res.json({ valid: true, ticket: toOperatorTicket(used) });
-    } catch (error) {
-      // P2025: otro operador la marcó como usada entre el chequeo y el update.
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2025'
-      ) {
-        res
-          .status(409)
-          .json({ message: 'La entrada ya fue utilizada', valid: false });
-        return;
-      }
-      throw error;
-    }
+    res.json({ valid: true, ticket: toOperatorTicket(result.data) });
   },
 
   /**
