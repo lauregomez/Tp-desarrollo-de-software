@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router'
 import Button from '../../shared/button/Button'
 import { formatPrice, formatShortDate, formatTime, courtName, clubName } from '../../../lib/format'
 import { getMyTicket } from './MyTicketDetails.server'
-import { TICKET_STATUS_LABEL } from '../../../types/ticket'
+import { TICKET_STATUS_LABEL, ticketDisplayStatus } from '../../../types/ticket'
 import type { Ticket } from '../../../types/ticket'
 
 export default function MyTicketDetails() {
@@ -75,7 +75,7 @@ export default function MyTicketDetails() {
         </div>
         <div>
           <dt className="inline">Estado: </dt>
-          <dd className="inline">{TICKET_STATUS_LABEL[ticket.status]}</dd>
+          <dd className="inline">{TICKET_STATUS_LABEL[ticketDisplayStatus(ticket)]}</dd>
         </div>
         {/* Sin pricePaid (vista de staff) no mostramos la línea: formatear
            undefined daría "$ NaN". */}
@@ -99,7 +99,7 @@ export default function MyTicketDetails() {
         {ticket.code ? (
           <>
             <p className="text-sm font-medium text-navy">Código de acceso</p>
-            {ticket.status === 'ACTIVE' ? (
+            {ticket.status === 'ACTIVE' && !ticket.expired ? (
               <>
                 {/* Monoespaciada para distinguir 0 de O, y con espacio
                     entre caracteres porque se dicta de a uno. */}
@@ -111,11 +111,11 @@ export default function MyTicketDetails() {
                 </p>
               </>
             ) : (
-              // En una USED el código queda como registro, pero chico y
-              // atenuado: mostrarlo grande invitaría a presentarla de
-              // nuevo y la validación la rechazaría.
+              // En una USED o vencida el código queda como registro, pero
+              // chico y atenuado: mostrarlo grande invitaría a presentarla
+              // (una USED ya se usó; una vencida es de un partido terminado).
               <p className="mt-3 text-center font-mono text-sm text-muted line-through">
-                {ticket.code} · ya utilizada
+                {ticket.code} · {ticket.expired ? 'vencida' : 'ya utilizada'}
               </p>
             )}
           </>

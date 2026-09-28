@@ -1,6 +1,6 @@
 import { apiFetch } from '../../../lib/api'
 import type { Callbacks } from '../../../lib/api'
-import type { Ticket, TicketStatus } from '../../../types/ticket'
+import type { Ticket, TicketDisplayStatus } from '../../../types/ticket'
 
 // Ruta base del recurso. apiFetch le antepone VITE_API_URL,
 // así que acá va sólo la parte propia del endpoint.
@@ -14,7 +14,7 @@ const RESOURCE = '/tickets'
 // nunca del cliente, así que es imposible pedir las entradas de otro.
 // apiFetch adjunta ese token en cada llamada.
 export const getMyTickets = (
-  status: TicketStatus | '',
+  status: TicketDisplayStatus | '',
   { onSuccess, onError }: Callbacks<Ticket[]>,
 ) => {
   // Con status vacío no mandamos el parámetro: el backend interpretaría

@@ -43,6 +43,11 @@ export interface Ticket {
   // está PENDING todavía no existe, por eso puede ser null.
   code: string | null
   status: TicketStatus
+  // Vencida = ACTIVE de un partido que ya terminó. No es un estado de la
+  // base: lo calcula el backend (toOwnerTicket) para no depender del reloj
+  // del navegador. Opcional por lo mismo que pricePaid: la vista de
+  // operador no lo manda.
+  expired?: boolean
   // Decimal de Prisma: viaja como string para no perder precisión.
   // Opcional porque el backend usa dos proyecciones: el dueño recibe el
   // precio, y un ADMIN u OPERATOR que mira una entrada ajena no (los
@@ -67,7 +72,7 @@ export interface TicketHolder {
 // suma el titular para confirmar a nombre de quién está, y nunca trae
 // el precio pagado. Omit en vez de repetir campos para que cualquier
 // cambio en Ticket se herede acá.
-export interface OperatorTicket extends Omit<Ticket, 'pricePaid'> {
+export interface OperatorTicket extends Omit<Ticket, 'pricePaid' | 'expired'> {
   user: TicketHolder
 }
 
@@ -79,15 +84,24 @@ export interface ValidateTicketResponse {
   ticket: OperatorTicket
 }
 
+// Estado tal como se muestra: suma "Vencida", que no existe en la base.
+export type TicketDisplayStatus = TicketStatus | 'EXPIRED'
+
 // Etiquetas en español, igual que CATEGORY_LABEL y STATUS_LABEL de match.ts.
 // Sin esto la pantalla mostraría el enum crudo (PENDING, ACTIVE, USED).
-export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = {
+export const TICKET_STATUS_LABEL: Record<TicketDisplayStatus, string> = {
   PENDING: 'Pendiente de pago',
   ACTIVE: 'Activa',
   USED: 'Usada',
+  EXPIRED: 'Vencida',
 }
 
-// Estados que el usuario puede ver en "Mis entradas": sólo las pagas.
-// Espejo de SOLD_STATUSES del backend, que rechaza con 400 cualquier
-// otro estado en GET /api/tickets/me.
-export const SOLD_STATUSES: TicketStatus[] = ['ACTIVE', 'USED']
+// El backend ya decidió si está vencida: acá sólo se elige qué mostrar.
+export function ticketDisplayStatus(ticket: Ticket): TicketDisplayStatus {
+  return ticket.expired ? 'EXPIRED' : ticket.status
+}
+
+// Opciones del filtro de "Mis entradas". EXPIRED viaja tal cual como
+// ?status= y el backend lo traduce a "ACTIVE de un partido terminado".
+// PENDING no está porque el backend responde 400.
+export const MY_TICKET_FILTERS: TicketDisplayStatus[] = ['ACTIVE', 'EXPIRED', 'USED']
