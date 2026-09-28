@@ -20,6 +20,13 @@ export interface CourtSummary {
   name: string
 }
 
+// La cancha tal como viene dentro de un partido: matchInclude del backend
+// también trae la dirección. Va aparte de CourtSummary porque los filtros
+// usan CourtSummary y ahí la dirección no hace falta.
+export interface MatchCourt extends CourtSummary {
+  address: string
+}
+
 export interface PublicMatch {
   id: number
   startsAt: string
@@ -27,7 +34,7 @@ export interface PublicMatch {
   category: Category
   homeClub: MatchClub
   awayClub: MatchClub
-  court: CourtSummary
+  court: MatchCourt
   status: MatchStatus
   soldOut: boolean
 }
@@ -53,7 +60,7 @@ export interface AdminMatch {
   courtId: number | null
   homeClub: MatchClub | null
   awayClub: MatchClub | null
-  court: CourtSummary | null
+  court: MatchCourt | null
   capacity: number
   sold: number
   available: number
