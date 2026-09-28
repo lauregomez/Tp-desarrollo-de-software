@@ -94,6 +94,7 @@ export default function MatchDetails() {
         <div>
           <dt className="font-semibold text-navy">Cancha</dt>
           <dd className="text-muted">{match.court.name}</dd>
+          <dd className="text-muted">{match.court.address}</dd>
         </div>
         <div>
           <dt className="font-semibold text-navy">Precio</dt>

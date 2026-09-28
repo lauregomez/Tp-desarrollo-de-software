@@ -68,7 +68,7 @@ function matchInclude() {
   return {
     homeClub: { select: { id: true, name: true, logoUrl: true } },
     awayClub: { select: { id: true, name: true, logoUrl: true } },
-    court: { select: { id: true, name: true, capacity: true } },
+    court: { select: { id: true, name: true, address: true, capacity: true } },
     _count: {
       select: {
         tickets: { where: { status: { in: SOLD_STATUSES } } },
@@ -234,7 +234,7 @@ export function toPublicMatch(match: MatchWithRelations) {
 
   return {
     ...rest,
-    court: court ? { id: court.id, name: court.name } : null,
+    court: court ? { id: court.id, name: court.name, address: court.address } : null,
     soldOut: available <= 0,
   };
 }
