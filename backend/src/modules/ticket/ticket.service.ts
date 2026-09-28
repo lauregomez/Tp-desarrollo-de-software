@@ -12,6 +12,7 @@ import {
   SOLD_STATUSES,
   ValidateFailureReason,
 } from './ticket.types';
+import { matchEndsAt, endedMatchCutoff } from '../match/match.types';
 
 /**
  * Relaciones que se traen siempre junto al ticket.
@@ -79,6 +80,8 @@ async function generateUniqueCode(
 
 export const ticketService = {
   async findAll(filters: TicketFilters = {}): Promise<TicketWithRelations[]> {
+    const cutoff = endedMatchCutoff();
+
     return prisma.ticket.findMany({
       where: {
         userId: filters.userId,
@@ -86,6 +89,13 @@ export const ticketService = {
         status: Array.isArray(filters.status)
           ? { in: filters.status }
           : filters.status,
+        // Terminado = empezó hace más de lo que dura un partido. Es el mismo
+        // criterio que usa toOwnerTicket para marcar `expired`.
+        ...(filters.matchEnded !== undefined && {
+          match: {
+            startsAt: filters.matchEnded ? { lte: cutoff } : { gt: cutoff },
+          },
+        }),
       },
       include: TICKET_INCLUDE,
       orderBy: { createdAt: 'desc' },
@@ -141,8 +151,10 @@ export const ticketService = {
         return { ok: false as const, reason: 'MATCH_NOT_PUBLISHED' as const };
       }
 
-      if (match.startsAt.getTime() <= Date.now()) {
-        return { ok: false as const, reason: 'MATCH_ALREADY_STARTED' as const };
+      // Se vende hasta que termina el partido, no hasta que empieza:
+      // contempla a los que llegan tarde. Es el mismo corte que usa el listado.
+      if (matchEndsAt(match.startsAt).getTime() <= Date.now()) {
+        return { ok: false as const, reason: 'MATCH_ALREADY_FINISHED' as const };
       }
 
       // 2. Límite de 5 entradas por usuario y por partido.
@@ -394,12 +406,19 @@ export const ticketService = {
 
 /**
  * Vista para el dueño de la entrada.
- * Incluye el code porque es lo que el frontend convierte en código.
+ * Incluye el code porque es lo que el usuario le dice al operador.
  * Oculta los datos del usuario, que ya conoce.
+ *
+ * `expired` no es un estado guardado: se deduce de la hora, igual que el
+ * listado de partidos. Así no depende de que el admin finalice el partido.
  */
 export function toOwnerTicket(ticket: TicketWithRelations) {
   const { user, ...rest } = ticket;
-  return rest;
+  const expired =
+    ticket.status === TicketStatus.ACTIVE &&
+    matchEndsAt(ticket.match.startsAt).getTime() <= Date.now();
+
+  return { ...rest, expired };
 }
 
 /**
