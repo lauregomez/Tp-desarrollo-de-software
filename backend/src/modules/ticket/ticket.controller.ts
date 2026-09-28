@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { TicketStatus } from '@prisma/client';
 import { AuthRequest } from '../../middlewares/auth.types';
-import { ReserveTicketDto, SOLD_STATUSES } from './ticket.types';
+import { ReserveTicketDto, SOLD_STATUSES, TicketFilters } from './ticket.types';
 import {
   ticketService,
   toOwnerTicket,
@@ -32,9 +32,9 @@ const RESERVE_ERRORS: Record<
     status: 409,
     message: 'El partido no está disponible para la venta',
   },
-  MATCH_ALREADY_STARTED: {
+  MATCH_ALREADY_FINISHED: {
     status: 409,
-    message: 'El partido ya comenzó',
+    message: 'El partido terminó. No se pueden comprar entradas',
   },
   USER_LIMIT_EXCEEDED: {
     status: 409,
@@ -145,17 +145,28 @@ export const ticketController = {
     // entradas que el usuario no tiene. Por eso ni siquiera se aceptan
     // como filtro.
     let statusFilter: TicketStatus | TicketStatus[] = SOLD_STATUSES;
+    let matchEnded: boolean | undefined;
     if (typeof status === 'string' && status !== '') {
-      if (!SOLD_STATUSES.includes(status as TicketStatus)) {
+      if (status === 'EXPIRED') {
+        // "Vencida" no se guarda en la base: es una entrada ACTIVE cuyo
+        // partido ya terminó.
+        statusFilter = TicketStatus.ACTIVE;
+        matchEnded = true;
+      } else if (!SOLD_STATUSES.includes(status as TicketStatus)) {
         res.status(400).json({ message: 'El estado indicado no es válido' });
         return;
+      } else {
+        statusFilter = status as TicketStatus;
+        // Las vencidas también son ACTIVE en la base: sin esto, el filtro
+        // "Activa" las mostraría.
+        if (statusFilter === TicketStatus.ACTIVE) matchEnded = false;
       }
-      statusFilter = status as TicketStatus;
     }
 
     const tickets = await ticketService.findAll({
       userId: user.userId,
       status: statusFilter,
+      matchEnded,
     });
 
     res.json(tickets.map(toOwnerTicket));

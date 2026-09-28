@@ -6,8 +6,8 @@ import MyTicketItem from '../myTicketItem/MyTicketItem'
 import PageNotFound from '../../pageNotFound/PageNotFound'
 import { errorToast } from '../../../shared/notifications'
 import { getMyTickets } from './MyTicketList.server'
-import { SOLD_STATUSES, TICKET_STATUS_LABEL } from '../../../types/ticket'
-import type { Ticket, TicketStatus } from '../../../types/ticket'
+import { MY_TICKET_FILTERS, TICKET_STATUS_LABEL } from '../../../types/ticket'
+import type { Ticket, TicketDisplayStatus } from '../../../types/ticket'
 import Button from '../../shared/button/Button'
 import EmptyState from '../../shared/emptyState/EmptyState'
 
@@ -15,7 +15,7 @@ export default function MyTicketList() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [isLoading, setIsLoading] = useState(true)
   // '' representa "todas": es el valor de la opción por defecto del select.
-  const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('')
+  const [statusFilter, setStatusFilter] = useState<TicketDisplayStatus | ''>('')
 
   // Corre al montar y cada vez que cambia el filtro: el backend ya acepta
   // ?status=, así que cada cambio vuelve a pedir la lista filtrada.
@@ -90,14 +90,14 @@ export default function MyTicketList() {
           id="status"
           value={statusFilter}
           onChange={(event) =>
-            setStatusFilter(event.target.value as TicketStatus | '')
+            setStatusFilter(event.target.value as TicketDisplayStatus | '')
           }
           className="rounded-lg border border-slate-300 px-3 py-2"
         >
           <option value="">Todas</option>
-          {/* Sólo los estados pagos: las PENDING son intentos de compra
-              y el backend no las devuelve en "Mis entradas". */}
-          {SOLD_STATUSES.map((value) => (
+          {/* Las PENDING no están: son intentos de compra y el backend no
+              las devuelve en "Mis entradas". */}
+          {MY_TICKET_FILTERS.map((value) => (
             <option key={value} value={value}>
               {TICKET_STATUS_LABEL[value]}
             </option>

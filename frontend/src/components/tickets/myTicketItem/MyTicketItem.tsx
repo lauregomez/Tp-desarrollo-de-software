@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router'
 import Button from '../../shared/button/Button'
 import { formatPrice, formatShortDate, formatTime, courtName, clubName } from '../../../lib/format'
 import { STATUS_CLASS } from './MyTicketItem.const'
-import { TICKET_STATUS_LABEL } from '../../../types/ticket'
+import { TICKET_STATUS_LABEL, ticketDisplayStatus } from '../../../types/ticket'
 import type { Ticket } from '../../../types/ticket'
 
 // La entrada entra por props: MyTicketList ya la tiene del listado
@@ -14,6 +14,7 @@ interface MyTicketItemProps {
 export default function MyTicketItem({ ticket }: MyTicketItemProps) {
   const navigate = useNavigate()
   const { match } = ticket
+  const displayStatus = ticketDisplayStatus(ticket)
 
   return (
     <article className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4">
@@ -23,10 +24,10 @@ export default function MyTicketItem({ ticket }: MyTicketItemProps) {
         </h2>
         <span
           className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${
-            STATUS_CLASS[ticket.status]
+            STATUS_CLASS[displayStatus]
           }`}
         >
-          {TICKET_STATUS_LABEL[ticket.status]}
+          {TICKET_STATUS_LABEL[displayStatus]}
         </span>
       </div>
 

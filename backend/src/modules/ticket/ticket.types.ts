@@ -28,7 +28,10 @@ export type ReserveTicketDto = {
 export type TicketFilters = {
   userId?: number;
   matchId?: number;
-status?: TicketStatus | TicketStatus[];
+  status?: TicketStatus | TicketStatus[];
+  // true: sólo entradas de partidos terminados; false: sólo de partidos que
+  // no terminaron; sin definir: no filtra por fecha.
+  matchEnded?: boolean;
 };
 
 /**
@@ -39,7 +42,7 @@ status?: TicketStatus | TicketStatus[];
 export type ReserveFailureReason =
   | 'MATCH_NOT_FOUND'
   | 'MATCH_NOT_PUBLISHED'
-  | 'MATCH_ALREADY_STARTED'
+  | 'MATCH_ALREADY_FINISHED'
   | 'USER_LIMIT_EXCEEDED'
   | 'NOT_ENOUGH_CAPACITY';
 

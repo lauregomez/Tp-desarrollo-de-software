@@ -1,9 +1,9 @@
 import { prisma } from '../../config/prisma';
 import { Category, MatchStatus, Prisma, TicketStatus } from '@prisma/client';
-import { CreateMatchDto, UpdateMatchDto, MatchFilters } from './match.types';
+import { CreateMatchDto, UpdateMatchDto, MatchFilters, MATCH_DURATION_MINUTES } from './match.types';
 import { SOLD_STATUSES } from '../ticket/ticket.types';
 
-const MATCH_DURATION_MINUTES = 50;
+
 
 // Argentina es UTC-3 todo el año (no tiene horario de verano desde 2009).
 const ARGENTINA_OFFSET_MS = 3 * 60 * 60 * 1000;

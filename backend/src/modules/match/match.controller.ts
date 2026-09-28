@@ -6,7 +6,7 @@ import {
   toPublicMatch,
   toAdminMatch,
 } from './match.service';
-import { isValidTransition } from './match.types';
+import { isValidTransition, endedMatchCutoff } from './match.types';
 
 function isAdmin(req: AuthRequest): boolean {
   return req.user?.role === 'ADMIN';
@@ -85,6 +85,13 @@ export const matchController = {
     if (fromFilter && toFilter && fromFilter > toFilter) {
       res.status(400).json({ message: 'La fecha desde no puede ser posterior a la fecha hasta' });
       return;
+    }
+
+    // Al público solo se le muestran partidos que se pueden comprar, pida lo que
+    // pida: se sigue vendiendo durante el partido para los que llegan tarde.
+    if (!admin) {
+      const cutoff = endedMatchCutoff();
+      if (!fromFilter || fromFilter < cutoff) fromFilter = cutoff;
     }
 
     const matches = await matchService.findAll({
