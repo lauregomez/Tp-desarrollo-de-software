@@ -12,61 +12,78 @@ interface UserItemProps {
   // Id del admin logueado, para distinguir su propia fila.
   currentUserId: number
   onEdit: (user: User) => void
-  onDelete: (id: number) => void
+  onDeactivate: (id: number) => void
+  onActivate: (id: number) => void
 }
 
 export default function UserItem({
   user,
   currentUserId,
   onEdit,
-  onDelete,
+  onDeactivate,
+  onActivate,
 }: UserItemProps) {
   // Estado local: el modal es efímero y vive acá para que cada fila
   // tenga el suyo, igual que en ClubItem.
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  // Un admin no puede eliminarse a sí mismo: quedaría sin sesión y,
-  // si fuera el último, el sistema sin nadie que administre.
-  // El backend no lo valida, así que el control vive acá.
+  // Un admin no puede darse de baja a sí mismo: quedaría sin sesión y,
+  // si fuera el último, el sistema sin nadie que administre. El backend
+  // lo valida igual; esconder el botón es sólo comodidad.
   const isSelf = user.id === currentUserId
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDeactivate = () => {
     setConfirmOpen(false)
-    onDelete(user.id)
+    onDeactivate(user.id)
   }
 
   return (
-    <tr className="border-t border-slate-200">
+    // La fila de un usuario inactivo se atenúa para distinguirla de un
+    // vistazo, sin sacarla de la lista: el admin tiene que poder
+    // reactivarla.
+    <tr className={`border-t border-slate-200 ${user.isActive ? '' : 'opacity-60'}`}>
       <td className="px-3 py-2">
         {user.lastName}, {user.name}
         {isSelf && <span className="ml-2 text-xs text-muted">(vos)</span>}
       </td>
       <td className="px-3 py-2">{user.email}</td>
       <td className="px-3 py-2">{ROLE_LABEL[user.roleId] ?? user.roleId}</td>
+      <td className="px-3 py-2">{user.isActive ? 'Activo' : 'Inactivo'}</td>
       <td className="px-3 py-2">
         <div className="flex gap-2 whitespace-nowrap">
           <Button variant="secondary" size="sm" onClick={() => onEdit(user)}>
             Editar
           </Button>
 
-          {/* Este botón NO borra: abre el modal. */}
-          {!isSelf && (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setConfirmOpen(true)}
-            >
-              Eliminar
-            </Button>
-          )}
+          {!isSelf &&
+            (user.isActive ? (
+              // Este botón NO da de baja: abre el modal.
+              <Button
+                variant="warning"
+                size="sm"
+                onClick={() => setConfirmOpen(true)}
+              >
+                Desactivar
+              </Button>
+            ) : (
+              // Reactivar no pide confirmación: es reversible y no
+              // destruye nada.
+              <Button
+                variant="success"
+                size="sm"
+                onClick={() => onActivate(user.id)}
+              >
+                Reactivar
+              </Button>
+            ))}
         </div>
 
         <ConfirmModal
           open={confirmOpen}
-          title="Eliminar usuario"
-          message={`¿Estás seguro de que querés eliminar a ${user.name} ${user.lastName}? Esta acción no se puede deshacer.`}
-          confirmLabel="Eliminar"
-          onConfirm={handleConfirmDelete}
+          title="Desactivar usuario"
+          message={`¿Querés desactivar a ${user.name} ${user.lastName}? No va a poder ingresar, pero se conserva su historial de entradas.`}
+          confirmLabel="Desactivar"
+          onConfirm={handleConfirmDeactivate}
           onCancel={() => setConfirmOpen(false)}
         />
       </td>

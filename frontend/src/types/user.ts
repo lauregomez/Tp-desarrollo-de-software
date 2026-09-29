@@ -9,6 +9,7 @@ export interface User {
   email: string
   roleId: number
   createdAt: string
+  isActive: boolean
 }
 
 // Ids fijos, definidos en prisma/seed.ts.

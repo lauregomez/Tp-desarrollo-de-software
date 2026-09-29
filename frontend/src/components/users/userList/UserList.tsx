@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, useNavigate } from 'react-router'
-
 import UserItem from '../userItem/UserItem'
 import UserForm from '../userForm/UserForm'
 import PageNotFound from '../../pageNotFound/PageNotFound'
@@ -8,7 +7,7 @@ import Button from '../../shared/button/Button'
 import EmptyState from '../../shared/emptyState/EmptyState'
 import { successToast, errorToast } from '../../../shared/notifications'
 import { useAuth } from '../../../context/useAuth'
-import { getUsers, createUser, updateUser, deleteUser } from './UserList.server'
+import { getUsers, createUser, updateUser, deactivateUser, activateUser} from './UserList.server'
 import { ROLE_ADMIN } from '../../../types/user'
 import type { User, CreateUserDto } from '../../../types/user'
 
@@ -76,17 +75,29 @@ export default function UserList() {
     })
   }
 
-  const handleDelete = (id: number) => {
-    deleteUser(id, {
-      onSuccess: (deletedId) => {
-        setUsers((prev) => prev.filter((u) => u.id !== deletedId))
-        successToast('¡Usuario eliminado correctamente!')
+  const handleDeactivate = (id: number) => {
+    deactivateUser(id, {
+      // El backend devuelve el usuario actualizado: lo reemplazamos en
+      // la lista en vez de sacarlo, porque sigue existiendo y el admin
+      // tiene que poder reactivarlo.
+      onSuccess: (updated) => {
+        setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
+        successToast('¡Usuario desactivado correctamente!')
       },
-      // El backend responde 409 si el usuario tiene entradas asociadas.
+      // Acá cae el 409 si el usuario tiene entradas sin usar.
       onError: (error) => errorToast(error.message),
     })
   }
 
+  const handleActivate = (id: number) => {
+    activateUser(id, {
+      onSuccess: (updated) => {
+        setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
+        successToast('¡Usuario reactivado correctamente!')
+      },
+      onError: (error) => errorToast(error.message),
+    })
+  }
   // Navegamos llevando el usuario en el state para que el formulario
   // se precargue sin pedirlo de nuevo al servidor.
   const handleEdit = (user: User) => {
@@ -99,7 +110,8 @@ export default function UserList() {
       user={user}
       currentUserId={currentUser?.id ?? 0}
       onEdit={handleEdit}
-      onDelete={handleDelete}
+      onDeactivate={handleDeactivate}
+      onActivate={handleActivate}
     />
   ))
 
@@ -133,6 +145,7 @@ export default function UserList() {
                       <th className="px-3 py-2">Nombre</th>
                       <th className="px-3 py-2">Email</th>
                       <th className="px-3 py-2">Rol</th>
+                      <th className="px-3 py-2">Estado</th>
                       <th className="px-3 py-2">Acciones</th>
                     </tr>
                   </thead>

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../../config/prisma';
 import { CreateUserDto, UpdateUserDto } from './user.types';
+import { TicketStatus } from '@prisma/client';
 
 const SALT_ROUNDS = 10;
 
@@ -10,6 +11,7 @@ const publicFields = {
   lastName: true,
   email: true,
   roleId: true,
+  isActive: true,
   createdAt: true,
 } as const;
 
@@ -97,5 +99,30 @@ export const userService = {
     });
     return role?.id ?? null;
   },
+    async countUnusedTickets(userId: number): Promise<number> {
+    return prisma.ticket.count({
+      where: {
+        userId,
+        status: { in: [TicketStatus.PENDING, TicketStatus.ACTIVE] },
+      },
+    });
+  },
+  
+    async deactivate(id: number) {
+    return prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+      select: publicFields,
+    });
+  },
+  
+    async activate(id: number) {
+    return prisma.user.update({
+      where: { id },
+      data: { isActive: true },
+      select: publicFields,
+    });
+  },
+
 };
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {isValidName, MAX_NAME_LENGTH, keepsAtLeastOneAdmin} from '../../src/modules/user/user.validations';
+import {isValidName, MAX_NAME_LENGTH, keepsAtLeastOneAdmin, canDeactivateUser } from '../../src/modules/user/user.validations';
 describe('isValidName', () => {
   // it.each corre el mismo test una vez por cada valor de la lista.
   it.each([
@@ -52,5 +52,18 @@ describe('keepsAtLeastOneAdmin', () => {
     // Sin administradores nadie puede entrar al panel, y no hay forma
     // de recuperarlo desde la aplicación.
     expect(keepsAtLeastOneAdmin(true, 1)).toBe(false);
+  });
+});
+
+describe('canDeactivateUser', () => {
+  it('permite la baja si no quedan entradas sin usar', () => {
+    // Las USED no cuentan: son historial, y conservarlas es el motivo
+    // por el que la baja es lógica y no un borrado.
+    expect(canDeactivateUser(0)).toBe(true);
+  });
+
+  it('no deja dar de baja con entradas sin usar', () => {
+    expect(canDeactivateUser(1)).toBe(false);
+    expect(canDeactivateUser(5)).toBe(false);
   });
 });

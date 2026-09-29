@@ -3,11 +3,8 @@ import { Prisma } from "@prisma/client";
 import { userService } from "./user.service";
 import { AuthRequest } from "../../middlewares/auth.types";
 import { canDeleteUser } from "./user.types";
-import {
-  isValidName,
-  MIN_NAME_LENGTH,
-  keepsAtLeastOneAdmin,
-} from "./user.validations";
+import {isValidName, MIN_NAME_LENGTH, keepsAtLeastOneAdmin, canDeactivateUser} from "./user.validations";
+
 
 export const userController = {
   async getAll(req: Request, res: Response): Promise<void> {
@@ -224,4 +221,74 @@ export const userController = {
       throw error;
     }
   },
+  
+    async deactivate(req: Request, res: Response): Promise<void> {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      res.status(400).json({ message: 'El id debe ser un número' });
+      return;
+    }
+
+    // Mismas dos reglas que el borrado: no darse de baja a uno mismo
+    // ni dejar al sistema sin administradores.
+    const { user } = req as AuthRequest;
+    if (user && !canDeleteUser(id, user.userId)) {
+      res.status(409).json({ message: 'No podés desactivar tu propio usuario' });
+      return;
+    }
+
+    const targetRole = await userService.findRoleName(id);
+    if (targetRole === null) {
+      res.status(404).json({ message: 'Usuario no encontrado' });
+      return;
+    }
+
+    if (targetRole === 'ADMIN') {
+      const adminCount = await userService.countAdmins();
+      if (!keepsAtLeastOneAdmin(true, adminCount)) {
+        res.status(409).json({
+          message: 'No se puede desactivar al único administrador del sistema',
+        });
+        return;
+      }
+    }
+
+    // La regla de la cátedra: las entradas ya usadas son historial y no
+    // bloquean; las que todavía no se usaron, sí.
+    const unusedTickets = await userService.countUnusedTickets(id);
+    if (!canDeactivateUser(unusedTickets)) {
+      res.status(409).json({
+        message:
+          'No se puede desactivar un usuario con entradas pendientes de activar asociadas',
+      });
+      return;
+    }
+
+    const updated = await userService.deactivate(id);
+    res.json(updated);
+  },
+
+  /** Revierte la baja lógica. */
+  async activate(req: Request, res: Response): Promise<void> {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      res.status(400).json({ message: 'El id debe ser un número' });
+      return;
+    }
+
+    try {
+      const updated = await userService.activate(id);
+      res.json(updated);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        res.status(404).json({ message: 'Usuario no encontrado' });
+        return;
+      }
+      throw error;
+    }
+  },
+
 };

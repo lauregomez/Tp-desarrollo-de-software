@@ -16,12 +16,21 @@ export const authController = {
 
     const result = await authService.login(email, password);
 
-    if (!result) {
+    if (!result.ok) {
+      if (result.reason === 'INACTIVE') {
+        // 403 y no 401: las credenciales son correctas, lo que falta
+        // es permiso para ingresar.
+        res.status(403).json({
+          message: 'Tu cuenta está desactivada. Contactá a un administrador.',
+        });
+        return;
+      }
       res.status(401).json({ message: 'Email o contraseña incorrectos' });
       return;
     }
 
-    res.json(result);
+    res.json(result.data);
+  
   },
 
   async register(req: Request, res: Response): Promise<void> {

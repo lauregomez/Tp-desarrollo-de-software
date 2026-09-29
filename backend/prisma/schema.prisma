@@ -16,16 +16,17 @@ model Role {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   name         String
-  lastName     String   @map("last_name")
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         Role     @relation(fields: [roleId], references: [id])
-  roleId       Int      @map("role_id")
+  lastName     String     @map("last_name")
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  role         Role       @relation(fields: [roleId], references: [id])
+  roleId       Int        @map("role_id")
+  isActive     Boolean    @default(true) @map("is_active")
   tickets      Ticket[]
   matchLogs    MatchLog[]
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
 
   @@map("users")
 }
