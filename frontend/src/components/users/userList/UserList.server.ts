@@ -39,11 +39,20 @@ export const updateUser = (
 // El backend responde 204 sin cuerpo, así que le pasamos al onSuccess
 // el id que ya teníamos para sacar el usuario de la lista sin volver
 // a pedirla entera.
-export const deleteUser = (
+export const deactivateUser = (
   id: number,
-  { onSuccess, onError }: Callbacks<number>,
+  { onSuccess, onError }: Callbacks<User>,
 ) => {
-  apiFetch<void>(`${RESOURCE}/${id}`, { method: 'DELETE' })
-    .then(() => onSuccess(id))
+  apiFetch<User>(`${RESOURCE}/${id}/deactivate`, { method: 'PATCH' })
+    .then(onSuccess)
+    .catch(onError)
+}
+
+export const activateUser = (
+  id: number,
+  { onSuccess, onError }: Callbacks<User>,
+) => {
+  apiFetch<User>(`${RESOURCE}/${id}/activate`, { method: 'PATCH' })
+    .then(onSuccess)
     .catch(onError)
 }

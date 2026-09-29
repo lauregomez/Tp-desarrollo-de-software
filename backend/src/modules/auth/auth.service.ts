@@ -15,10 +15,16 @@ export const authService = {
       include: { role: true },
     });
 
-    if (!user) return null;
+    if (!user) return { ok: false as const, reason: 'INVALID' as const };
 
     const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) return null;
+    if (!isValid) return { ok: false as const, reason: 'INVALID' as const };
+
+    // Un usuario dado de baja no puede ingresar, aunque sus credenciales
+    // sigan siendo correctas.
+    if (!user.isActive) {
+      return { ok: false as const, reason: 'INACTIVE' as const };
+    }
 
     const payload: JwtPayload = {
       userId: user.id,
@@ -30,13 +36,16 @@ export const authService = {
     } as jwt.SignOptions);
 
     return {
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role.name,
+      ok: true as const,
+      data: {
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role.name,
+        },
       },
     };
   },

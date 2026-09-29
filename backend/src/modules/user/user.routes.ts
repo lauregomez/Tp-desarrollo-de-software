@@ -13,3 +13,6 @@ router.put('/:id',     authenticate, authorize('ADMIN'), asyncHandler(userContro
 router.delete('/:id',  authenticate, authorize('ADMIN'), asyncHandler(userController.remove));
 
 export default router;
+
+router.patch('/:id/deactivate', authenticate, authorize('ADMIN'), asyncHandler(userController.deactivate));
+router.patch('/:id/activate',   authenticate, authorize('ADMIN'), asyncHandler(userController.activate));

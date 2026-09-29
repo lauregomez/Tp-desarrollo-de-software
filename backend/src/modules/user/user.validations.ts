@@ -54,3 +54,15 @@ export function keepsAtLeastOneAdmin(
   if (!targetIsAdmin) return true;
   return adminCount > 1;
 }
+
+/**
+ * Un usuario se puede dar de baja sólo si no tiene entradas previas a
+ * su utilización. Las USED no bloquean: son historial y el motivo por
+ * el que se usa baja lógica en vez de eliminar el registro.
+ *
+ * Criterio acordado con la cátedra: alcanza con el estado de la
+ * entrada, sin mirar si el partido ya se jugó.
+ */
+export function canDeactivateUser(pendingOrActiveTickets: number): boolean {
+  return pendingOrActiveTickets === 0;
+}
