@@ -9,6 +9,7 @@ const router = Router();
 
 router.get('/',              optionalAuthenticate, asyncHandler(matchController.getAll));
 router.get('/:id',           optionalAuthenticate, asyncHandler(matchController.getById));
+router.get('/:id/weather',   optionalAuthenticate, asyncHandler(matchController.getWeather));
 router.post('/',             authenticate, authorize('ADMIN'), asyncHandler(matchController.create));
 router.put('/:id',           authenticate, authorize('ADMIN'), asyncHandler(matchController.update));
 router.patch('/:id/status',  authenticate, authorize('ADMIN'), asyncHandler(matchController.changeStatus));
