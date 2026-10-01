@@ -75,3 +75,51 @@ export function TrashIcon({ className = 'h-4 w-4' }: IconProps) {
     </svg>
   )
 }
+
+// Iconos del clima. Usan fill="none" y trazo como los demás, pero el sol
+// lleva relleno para que se distinga de la luna a tamaño chico.
+
+export function SunIcon({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg {...BASE_PROPS} className={className}>
+      <circle cx="12" cy="12" r="4" fill="currentColor" />
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2" />
+      <path d="m5 5 1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19" />
+    </svg>
+  )
+}
+
+export function CloudIcon({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg {...BASE_PROPS} className={className}>
+      <path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.5-1.5A3.5 3.5 0 0 1 17 18Z" />
+    </svg>
+  )
+}
+
+export function RainIcon({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg {...BASE_PROPS} className={className}>
+      <path d="M7 15a4 4 0 0 1 0-8 5 5 0 0 1 9.5-1.5A3.5 3.5 0 0 1 17 15Z" />
+      <path d="M9 18v2M13 18v3M17 18v2" />
+    </svg>
+  )
+}
+
+export function StormIcon({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg {...BASE_PROPS} className={className}>
+      <path d="M7 14a4 4 0 0 1 0-8 5 5 0 0 1 9.5-1.5A3.5 3.5 0 0 1 17 14Z" />
+      <path d="m13 16-3 4h4l-3 4" />
+    </svg>
+  )
+}
+
+export function SnowIcon({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg {...BASE_PROPS} className={className}>
+      <path d="M7 15a4 4 0 0 1 0-8 5 5 0 0 1 9.5-1.5A3.5 3.5 0 0 1 17 15Z" />
+      <path d="M9 19h.01M13 19h.01M17 19h.01M11 21h.01M15 21h.01" />
+    </svg>
+  )
+}

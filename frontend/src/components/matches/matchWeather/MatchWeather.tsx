@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { weatherIconFor } from './MatchWeather.const'
 
 import { getMatchWeather } from './MatchWeather.server'
 // Alias porque el componente se llama igual que el tipo.
@@ -13,10 +14,18 @@ interface MatchWeatherProps {
 function renderWeather(weather: Weather | null) {
   if (weather?.status === 'AVAILABLE') {
     const { forecast } = weather
+    const Icon = weatherIconFor(forecast.weatherCode)
 
     return (
       <>
-        <p className="text-4xl font-bold text-navy">{forecast.temperature} °C</p>
+        <div className="flex items-center gap-3">
+          {/* aria-hidden: la descripción de abajo ya dice qué clima es,
+              así que el icono no agrega nada para un lector de pantalla. */}
+          <Icon className="h-10 w-10 text-primary" />
+          <p className="text-4xl font-bold text-navy">
+            {forecast.temperature} °C
+          </p>
+        </div>
         <p className="mt-1 text-sm font-medium text-navy">{forecast.description}</p>
 
         <dl className="mt-4 space-y-2 text-sm">

@@ -152,6 +152,7 @@ export const weatherService = {
         precipitationProbability,
         windSpeed: Math.round(windSpeed),
         description: describeWeatherCode(weatherCode),
+        weatherCode,
       },
     };
   },
