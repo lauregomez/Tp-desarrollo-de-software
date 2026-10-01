@@ -5,6 +5,7 @@ export interface WeatherForecast {
   precipitationProbability: number // %
   windSpeed: number                // km/h, redondeado a entero
   description: string              // en español, ej. "Lluvia moderada"
+  weatherCode: number
 }
 
 // Unión discriminada por status: forecast solo existe en AVAILABLE, así
