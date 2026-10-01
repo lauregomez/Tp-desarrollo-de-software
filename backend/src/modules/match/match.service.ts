@@ -1,7 +1,15 @@
 import { prisma } from '../../config/prisma';
-import { Category, MatchStatus, Prisma, TicketStatus } from '@prisma/client';
-import { CreateMatchDto, UpdateMatchDto, MatchFilters, MATCH_DURATION_MINUTES } from './match.types';
+import { Category, Match, MatchStatus, Prisma, TicketStatus } from '@prisma/client';
+import {
+  CreateMatchDto,
+  UpdateMatchDto,
+  MatchFilters,
+  MATCH_DURATION_MINUTES,
+  matchEndsAt,
+} from './match.types';
 import { SOLD_STATUSES } from '../ticket/ticket.types';
+import { weatherService } from '../weather/weather.service';
+import { MatchWeather } from '../weather/weather.types';
 
 
 
@@ -216,6 +224,20 @@ export const matchService = {
       },
       select: { id: true },
     });
+  },
+
+  // Un partido suspendido, finalizado o que ya terminó no necesita pronóstico:
+  // se corta acá, antes de llamar a Open-Meteo.
+  async getWeather(match: Pick<Match, 'status' | 'startsAt'>): Promise<MatchWeather> {
+    if (
+      match.status === MatchStatus.CANCELLED ||
+      match.status === MatchStatus.FINISHED ||
+      matchEndsAt(match.startsAt).getTime() < Date.now()
+    ) {
+      return { status: 'UNAVAILABLE' };
+    }
+
+    return weatherService.getWeatherAt(match.startsAt);
   },
 
 };

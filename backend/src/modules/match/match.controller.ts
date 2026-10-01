@@ -12,6 +12,31 @@ function isAdmin(req: AuthRequest): boolean {
   return req.user?.role === 'ADMIN';
 }
 
+// Un partido es visible si es público (PUBLISHED) o si quien pide es admin.
+function canView(req: AuthRequest, match: { status: MatchStatus }): boolean {
+  return isAdmin(req) || match.status === MatchStatus.PUBLISHED;
+}
+
+// Busca el partido del :id aplicando la regla de visibilidad. Si no se puede
+// mostrar, responde 400/404 y devuelve null para que el handler corte.
+async function findVisibleMatch(req: AuthRequest, res: Response) {
+  const id = Number(req.params.id);
+
+  if (Number.isNaN(id)) {
+    res.status(400).json({ message: 'El id debe ser un número' });
+    return null;
+  }
+
+  const match = await matchService.findById(id);
+
+  if (!match || !canView(req, match)) {
+    res.status(404).json({ message: 'Partido no encontrado' });
+    return null;
+  }
+
+  return match;
+}
+
 // Un filtro puede venir una vez (?clubId=3) o repetido (?clubId=3&clubId=7):
 // Express lo entrega como string o como array. Acá lo normalizamos a lista.
 function toList(value: unknown): string[] {
@@ -108,26 +133,17 @@ export const matchController = {
   },
 
   async getById(req: Request, res: Response): Promise<void> {
-    const id = Number(req.params.id);
-
-    if (Number.isNaN(id)) {
-      res.status(400).json({ message: 'El id debe ser un número' });
-      return;
-    }
-
-    const match = await matchService.findById(id);
-
-    if (!match) {
-      res.status(404).json({ message: 'Partido no encontrado' });
-      return;
-    }
-
-    if (!isAdmin(req) && match.status !== MatchStatus.PUBLISHED) {
-      res.status(404).json({ message: 'Partido no encontrado' });
-      return;
-    }
+    const match = await findVisibleMatch(req, res);
+    if (!match) return;
 
     res.json(isAdmin(req) ? toAdminMatch(match) : toPublicMatch(match));
+  },
+
+  async getWeather(req: Request, res: Response): Promise<void> {
+    const match = await findVisibleMatch(req, res);
+    if (!match) return;
+
+    res.json(await matchService.getWeather(match));
   },
 
   async create(req: Request, res: Response): Promise<void> {
