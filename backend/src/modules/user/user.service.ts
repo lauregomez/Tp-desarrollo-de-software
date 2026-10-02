@@ -10,7 +10,7 @@ const publicFields = {
   name: true,
   lastName: true,
   email: true,
-  roleId: true,
+  role: { select: { name: true } },
   isActive: true,
   createdAt: true,
 } as const;
@@ -38,7 +38,7 @@ export const userService = {
         name: dto.name,
         lastName: dto.lastName,
         email: dto.email,
-        roleId: dto.roleId,
+        role: { connect: { name: dto.role } },
         passwordHash,
       },
       select: publicFields,
@@ -48,23 +48,20 @@ export const userService = {
   async update(id: number, dto: UpdateUserDto) {
     return prisma.user.update({
       where: { id },
-      data: dto,
+      data: {
+        name: dto.name,
+        lastName: dto.lastName,
+        email: dto.email,
+        // Sólo se toca el rol si vino en el DTO: el update es parcial.
+        ...(dto.role !== undefined && {
+          role: { connect: { name: dto.role } },
+        }),
+      },
       select: publicFields,
     });
   },
 
-  async remove(id: number) {
-    return prisma.user.delete({ where: { id } });
-  },
   
-   /**
-   * Cuenta los usuarios con rol ADMIN.
-   *
-   * Busca el rol por nombre y no por id: los ids los asigna la base
-   * (autoincrement) y sólo coinciden con 1/2/3 por cómo los carga el
-   * seed. El nombre es lo estable.
-   */
-
   async countAdmins(): Promise<number> {
     return prisma.user.count({
       where: { role: { name: 'ADMIN' } },
@@ -85,20 +82,7 @@ export const userService = {
     return user?.role.name ?? null;
   },
 
-  /**
-   * Traduce el nombre de un rol a su id.
-   *
-   * Hace falta porque el contrato de la API todavía habla en ids
-   * (roleId), pero las reglas de negocio razonan en nombres: el id que
-   * tiene ADMIN depende de cómo se cargó la base.
-   */
-  async findRoleIdByName(name: string): Promise<number | null> {
-    const role = await prisma.role.findUnique({
-      where: { name },
-      select: { id: true },
-    });
-    return role?.id ?? null;
-  },
+
     async countUnusedTickets(userId: number): Promise<number> {
     return prisma.ticket.count({
       where: {

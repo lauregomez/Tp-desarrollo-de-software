@@ -1,16 +1,22 @@
+import { RoleName } from '../../middlewares/auth.types';
+
+// El contrato habla de nombres de rol y no de ids: el id lo asigna la
+// base y depende de cómo se cargó el seed, mientras que el nombre es
+// parte del dominio. RoleName sale de auth.types.ts, que es la única
+// fuente de verdad de los roles en el backend.
 export interface CreateUserDto {
   name: string;
   lastName: string;
   email: string;
   password: string;
-  roleId: number;
+  role: RoleName;
 }
 
 export interface UpdateUserDto {
   name?: string;
   lastName?: string;
   email?: string;
-  roleId?: number;
+  role?: RoleName;
 }
 
 /**

@@ -8,7 +8,6 @@ import EmptyState from '../../shared/emptyState/EmptyState'
 import { successToast, errorToast } from '../../../shared/notifications'
 import { useAuth } from '../../../context/useAuth'
 import { getUsers, createUser, updateUser, deactivateUser, activateUser} from './UserList.server'
-import { ROLE_ADMIN } from '../../../types/user'
 import type { User, CreateUserDto } from '../../../types/user'
 
 export default function UserList() {
@@ -54,7 +53,7 @@ export default function UserList() {
   ) => {
     // Un admin no puede quitarse a sí mismo el rol de admin: perdería
     // el acceso al panel en el que está parado.
-    if (id === currentUser?.id && user.roleId !== ROLE_ADMIN) {
+    if (id === currentUser?.id && user.role !== 'ADMIN') {
       errorToast('No podés quitarte a vos mismo el rol de administrador')
       onFinish()
       return

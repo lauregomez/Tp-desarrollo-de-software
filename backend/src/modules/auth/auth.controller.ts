@@ -59,24 +59,13 @@ export const authController = {
       return;
     }
 
-    const defaultRole = await prisma.role.findUnique({
-      where: { name: 'USER' },
-    });
-
-    if (!defaultRole) {
-      res
-        .status(500)
-        .json({ message: 'El rol por defecto no está configurado' });
-      return;
-    }
-
     try {
       const user = await userService.create({
         name: name.trim(),
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
         password,
-        roleId: defaultRole.id,
+        role: 'USER', 
       });
       res.status(201).json(user);
     } catch (error) {

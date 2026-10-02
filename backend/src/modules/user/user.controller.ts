@@ -1,10 +1,13 @@
 import { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import { userService } from "./user.service";
-import { AuthRequest } from "../../middlewares/auth.types";
+import { AuthRequest, ROLES, RoleName } from "../../middlewares/auth.types";
 import { canDeleteUser } from "./user.types";
 import {isValidName, MIN_NAME_LENGTH, keepsAtLeastOneAdmin, canDeactivateUser} from "./user.validations";
 
+function isRoleName(value: unknown): value is RoleName {
+  return typeof value === 'string' && (ROLES as readonly string[]).includes(value);
+}
 
 export const userController = {
   async getAll(req: Request, res: Response): Promise<void> {
@@ -27,7 +30,7 @@ export const userController = {
   },
 
   async create(req: Request, res: Response): Promise<void> {
-    const { name, lastName, email, password, roleId } = req.body;
+    const { name, lastName, email, password, role } = req.body;
 
     if (typeof name !== "string" || !isValidName(name)) {
       res.status(400).json({
@@ -51,8 +54,8 @@ export const userController = {
         .json({ message: "La contraseña debe tener al menos 8 caracteres" });
       return;
     }
-    if (!Number.isInteger(roleId)) {
-      res.status(400).json({ message: "El rol es obligatorio" });
+    if (!isRoleName(role)) {
+      res.status(400).json({ message: `El rol debe ser uno de: ${ROLES.join(', ')}` });
       return;
     }
 
@@ -62,7 +65,7 @@ export const userController = {
         lastName: lastName.trim(),
         email: email.trim().toLowerCase(),
         password,
-        roleId,
+        role,
       });
       res.status(201).json(user);
     } catch (error) {
@@ -89,7 +92,7 @@ export const userController = {
       return;
     }
 
-    const { name, lastName, email, roleId } = req.body;
+    const { name, lastName, email, role } = req.body;
 
     if (
       name !== undefined &&
@@ -103,26 +106,30 @@ export const userController = {
         // Cambiarle el rol al último ADMIN deja el sistema sin administración,
     // igual que eliminarlo. Es el mismo agujero por otra vía, así que
     // aplica la misma regla.
-    if (roleId !== undefined) {
+    if (role !== undefined) {
+      if (!isRoleName(role)) {
+        res.status(400).json({
+          message: `El rol debe ser uno de: ${ROLES.join(', ')}`,
+        });
+        return;
+      }
+
       const targetRole = await userService.findRoleName(id);
 
-      if (targetRole === 'ADMIN') {
-        // Sólo importa si el rol nuevo NO es ADMIN: reasignarle el mismo
-        // rol no cambia el conteo.
-        const adminRole = await userService.findRoleIdByName('ADMIN');
-
-        if (roleId !== adminRole) {
-          const adminCount = await userService.countAdmins();
-          if (!keepsAtLeastOneAdmin(true, adminCount)) {
-            res.status(409).json({
-              message:
-                'No se puede quitar el rol de administrador al único que queda',
-            });
-            return;
-          }
+      // Sólo importa si el rol nuevo NO es ADMIN: reasignarle el mismo
+      // rol no cambia el conteo.
+      if (targetRole === 'ADMIN' && role !== 'ADMIN') {
+        const adminCount = await userService.countAdmins();
+        if (!keepsAtLeastOneAdmin(true, adminCount)) {
+          res.status(409).json({
+            message:
+              'No se puede quitar el rol de administrador al único que queda',
+          });
+          return;
         }
       }
     }
+    
     if (
       lastName !== undefined &&
       (typeof lastName !== "string" || !isValidName(lastName))
@@ -139,17 +146,13 @@ export const userController = {
       res.status(400).json({ message: "El email no es válido" });
       return;
     }
-    if (roleId !== undefined && !Number.isInteger(roleId)) {
-      res.status(400).json({ message: "El rol no es válido" });
-      return;
-    }
 
     try {
       const user = await userService.update(id, {
         name: name?.trim(),
         lastName: lastName?.trim(),
         email: email?.trim().toLowerCase(),
-        roleId,
+        role,
       });
       res.json(user);
     } catch (error) {
@@ -173,54 +176,7 @@ export const userController = {
     }
   },
 
-  async remove(req: Request, res: Response): Promise<void> {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) {
-      res.status(400).json({ message: "El id debe ser un número" });
-      return;
-    }
 
-    // Un admin no puede eliminarse a sí mismo: quedaría sin sesión
-    // y, si fuera el último, el sistema sin nadie que administre.
-    // El front esconde el botón, pero eso es UX: la regla vive acá,
-    // igual que las rutas protegidas por authorize.
-    const { user } = req as AuthRequest;
-    if (user && !canDeleteUser(id, user.userId)) {
-      res.status(409).json({ message: "No podés eliminar tu propio usuario" });
-      return;
-    }
-    // No se puede eliminar al último ADMIN: el sistema quedaría sin
-    // nadie que administre y no habría forma de recuperarlo desde la app.
-    const targetRole = await userService.findRoleName(id);
-    if (targetRole === "ADMIN") {
-      const adminCount = await userService.countAdmins();
-      if (!keepsAtLeastOneAdmin(true, adminCount)) {
-        res.status(409).json({
-          message: "No se puede eliminar al único administrador del sistema",
-        });
-        return;
-      }
-    }
-    try {
-      await userService.remove(id);
-      res.status(204).send();
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2025") {
-          res.status(404).json({ message: "Usuario no encontrado" });
-          return;
-        }
-        if (error.code === "P2003") {
-          res.status(409).json({
-            message:
-              "No se puede eliminar: el usuario tiene entradas asociadas",
-          });
-          return;
-        }
-      }
-      throw error;
-    }
-  },
   
     async deactivate(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
