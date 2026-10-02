@@ -1,22 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router'
-
 import Button from '../../shared/button/Button'
 import { errorToast } from '../../../shared/notifications'
-import {
-  getClubOptions,
-  getCourtOptions,
-  getMatch,
-} from './MatchForm.server'
+import {getClubOptions, getCourtOptions, getMatch} from './MatchForm.server'
+import { TIME_OPTIONS } from './MatchForm.const'
 import { CATEGORY_LABEL } from '../../../types/match'
 import type { Court } from '../../../types/court'
-import type {
-  AdminMatch,
-  Category,
-  ClubSummary,
-  CreateMatchDto,
-} from '../../../types/match'
+import type {AdminMatch, Category, ClubSummary, CreateMatchDto} from '../../../types/match'
 
 // Output properties: el formulario no guarda nada por su cuenta,
 // avisa hacia arriba y MatchAdmin decide qué hacer con el resultado.
@@ -25,17 +16,19 @@ interface MatchFormProps {
   onEdit: (id: number, match: CreateMatchDto, onFinish: () => void) => void
 }
 
-// El input datetime-local espera 'YYYY-MM-DDTHH:mm' en hora local,
-// pero el backend manda ISO en UTC. Sin esta conversión el campo
-// aparecería vacío al editar.
-function toInputValue(iso: string): string {
-  const date = new Date(iso)
-  const offset = date.getTimezoneOffset() * 60000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+// El backend manda ISO en UTC; los inputs trabajan en hora local.
+// Devuelve la fecha y la hora por separado, que es como las pide
+// el formulario.
+function toFormParts(iso: string): { date: string; time: string } {
+  const utc = new Date(iso)
+  const offset = utc.getTimezoneOffset() * 60000
+  const local = new Date(utc.getTime() - offset).toISOString()
+  return { date: local.slice(0, 10), time: local.slice(11, 16) }
 }
 
 const EMPTY_FORM = {
-  startsAt: '',
+  date: '',
+  time: '',
   price: '',
   category: '' as Category | '',
   homeClubId: '',
@@ -57,7 +50,7 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
   const [form, setForm] = useState(
     matchFromState
       ? {
-          startsAt: toInputValue(matchFromState.startsAt),
+          ...toFormParts(matchFromState.startsAt),
           price: matchFromState.price,
           category: matchFromState.category,
           homeClubId: String(matchFromState.homeClubId),
@@ -92,7 +85,7 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
     getMatch(Number(id), {
       onSuccess: (match) =>
         setForm({
-          startsAt: toInputValue(match.startsAt),
+          ...toFormParts(match.startsAt),
           price: match.price,
           category: match.category,
           homeClubId: String(match.homeClubId),
@@ -121,8 +114,9 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
 
     // Validaciones de forma. Las de negocio (conflicto de cancha,
     // capacidad, entradas vendidas) las hace el backend y llegan
-    // por el onError de MatchList.
-    if (!form.startsAt) return setError('La fecha y hora son obligatorias')
+    // por el onError de MatchAdmin.
+    if (!form.date) return setError('La fecha es obligatoria')
+    if (!form.time) return setError('La hora es obligatoria')
     if (!form.category) return setError('La categoría es obligatoria')
     if (!form.homeClubId) return setError('El club local es obligatorio')
     if (!form.awayClubId) return setError('El club visitante es obligatorio')
@@ -139,10 +133,10 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
 
     setIsSubmitting(true)
 
-    // datetime-local da hora local sin zona; toISOString la convierte
-    // a UTC, que es lo que espera el backend.
     const payload: CreateMatchDto = {
-      startsAt: new Date(form.startsAt).toISOString(),
+      // Los dos campos se juntan en hora local y toISOString los pasa
+      // a UTC, que es lo que espera el backend.
+      startsAt: new Date(`${form.date}T${form.time}`).toISOString(),
       price,
       category: form.category as Category,
       homeClubId: Number(form.homeClubId),
@@ -175,16 +169,41 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
 
       <div className="mt-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <label htmlFor="startsAt" className="text-sm font-medium">
-            Fecha y hora
+          <label htmlFor="date" className="text-sm font-medium">
+            Fecha
           </label>
           <input
-            id="startsAt"
-            type="datetime-local"
-            value={form.startsAt}
-            onChange={(e) => handleChange(e, 'startsAt')}
+            id="date"
+            type="date"
+            value={form.date}
+            onChange={(e) => handleChange(e, 'date')}
             className={inputClass}
           />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="time" className="text-sm font-medium">
+            Hora
+          </label>
+          <select
+            id="time"
+            value={form.time}
+            onChange={(e) => handleChange(e, 'time')}
+            className={inputClass}
+          >
+            <option value="">Elegí un horario</option>
+            {/* Si el partido que se edita tiene una hora fuera de la
+                lista (cargada antes de este cambio), se agrega para no
+                perder el dato ni dejar el select vacío. */}
+            {form.time && !TIME_OPTIONS.includes(form.time) && (
+              <option value={form.time}>{form.time}</option>
+            )}
+            {TIME_OPTIONS.map((time) => (
+              <option key={time} value={time}>
+                {time}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex flex-col gap-1">
