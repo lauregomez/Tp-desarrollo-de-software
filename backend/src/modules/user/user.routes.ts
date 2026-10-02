@@ -10,7 +10,6 @@ router.get('/',        authenticate, authorize('ADMIN'), asyncHandler(userContro
 router.get('/:id',     authenticate, authorize('ADMIN'), asyncHandler(userController.getById));
 router.post('/',       authenticate, authorize('ADMIN'), asyncHandler(userController.create));
 router.put('/:id',     authenticate, authorize('ADMIN'), asyncHandler(userController.update));
-router.delete('/:id',  authenticate, authorize('ADMIN'), asyncHandler(userController.remove));
 
 export default router;
 

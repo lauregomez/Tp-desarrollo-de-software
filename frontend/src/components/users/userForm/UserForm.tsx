@@ -6,7 +6,7 @@ import Button from '../../shared/button/Button'
 import { errorToast } from '../../../shared/notifications'
 import { getUser } from './UserForm.server'
 import { ROLE_LABEL } from '../../../types/user'
-import type { User, CreateUserDto } from '../../../types/user'
+import type { User, CreateUserDto, RoleName } from '../../../types/user'
 
 // Output properties: el formulario no guarda nada por su cuenta,
 // avisa hacia arriba y UserList decide qué hacer con el resultado.
@@ -21,7 +21,8 @@ const EMPTY_FORM = {
   lastName: '',
   email: '',
   password: '',
-  roleId: '',
+  // Vacío mientras no se elige nada: el select arranca sin selección.
+  role: '' as RoleName | '',
 }
 
 export default function UserForm({ onAdd, onEdit }: UserFormProps) {
@@ -34,7 +35,8 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
   const userFromState = state as User | null
 
   // Todos los campos como string: es lo que devuelven los inputs.
-  // La conversión de roleId a number ocurre recién en el submit.
+  // El rol viaja anidado en la respuesta de la API, así que se extrae
+  // el nombre para el select.
   const [form, setForm] = useState(
     userFromState
       ? {
@@ -42,7 +44,7 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
           lastName: userFromState.lastName,
           email: userFromState.email,
           password: '',
-          roleId: String(userFromState.roleId),
+          role: userFromState.role.name as RoleName | '',
         }
       : EMPTY_FORM,
   )
@@ -61,7 +63,7 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
           lastName: user.lastName,
           email: user.email,
           password: '',
-          roleId: String(user.roleId),
+          role: user.role.name as RoleName | '',
         }),
       onError: (err) => {
         errorToast(err.message)
@@ -91,7 +93,7 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
       return setError('Ingresá un apellido válido, sin números')
     }
     if (!form.email.includes('@')) return setError('El email no es válido')
-    if (!form.roleId) return setError('El rol es obligatorio')
+    if (!form.role) return setError('El rol es obligatorio')
 
     // La contraseña sólo se valida en el alta: el update del backend
     // no la contempla, así que al editar el campo ni se muestra.
@@ -106,7 +108,8 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
       lastName: form.lastName.trim(),
       email: form.email.trim().toLowerCase(),
       password: form.password,
-      roleId: Number(form.roleId),
+      // El contrato de la API habla de nombres de rol, no de ids.
+      role: form.role,
     }
 
     // No reseteamos isSubmitting acá: onAdd/onEdit son asincrónicos.
@@ -194,16 +197,18 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
         )}
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="roleId" className="text-sm font-medium">
+          <label htmlFor="role" className="text-sm font-medium">
             Rol
           </label>
           <select
-            id="roleId"
-            value={form.roleId}
-            onChange={(e) => handleChange(e, 'roleId')}
+            id="role"
+            value={form.role}
+            onChange={(e) => handleChange(e, 'role')}
             className={inputClass}
           >
             <option value="">Elegí un rol</option>
+            {/* El value es el nombre del rol, que es lo que viaja a la
+                API; la etiqueta en español es sólo para mostrar. */}
             {Object.entries(ROLE_LABEL).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}

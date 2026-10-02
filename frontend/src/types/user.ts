@@ -1,29 +1,26 @@
+// Nombres de rol, espejo de ROLES en el backend (auth.types.ts).
+// El contrato de la API habla de nombres y no de ids: el id lo asigna
+// la base, el nombre es parte del dominio.
+export type RoleName = 'ADMIN' | 'OPERATOR' | 'USER'
+
 // Lo que devuelve la API. El service del backend usa un `select` con
 // publicFields, así que el passwordHash nunca sale en la respuesta.
-// Devuelve roleId (número), no el objeto Role: por eso el nombre del
-// rol se resuelve en el front con ROLE_LABEL.
+// El rol viaja anidado porque sale de la relación con la tabla roles.
 export interface User {
   id: number
   name: string
   lastName: string
   email: string
-  roleId: number
+  role: { name: RoleName }
   createdAt: string
   isActive: boolean
 }
 
-// Ids fijos, definidos en prisma/seed.ts.
-// Los roles son un catálogo cerrado: no hay pantalla para crearlos
-// ni cambian en runtime, así que se resuelven acá en vez de pedirlos
-// a la API en cada carga. Mismo criterio que CATEGORY_LABEL en match.ts.
-export const ROLE_ADMIN = 1
-export const ROLE_OPERATOR = 2
-export const ROLE_USER = 3
-
-export const ROLE_LABEL: Record<number, string> = {
-  [ROLE_ADMIN]: 'Administrador',
-  [ROLE_OPERATOR]: 'Operador',
-  [ROLE_USER]: 'Usuario',
+// Etiquetas en español, igual que CATEGORY_LABEL en match.ts.
+export const ROLE_LABEL: Record<RoleName, string> = {
+  ADMIN: 'Administrador',
+  OPERATOR: 'Operador',
+  USER: 'Usuario',
 }
 
 // Cuerpo del POST /api/users. La contraseña sólo viaja en el alta:
@@ -34,7 +31,7 @@ export interface CreateUserDto {
   lastName: string
   email: string
   password: string
-  roleId: number
+  role: RoleName
 }
 
 // El PUT acepta los mismos campos menos la contraseña.

@@ -47,7 +47,7 @@ export default function UserItem({
         {isSelf && <span className="ml-2 text-xs text-muted">(vos)</span>}
       </td>
       <td className="px-3 py-2">{user.email}</td>
-      <td className="px-3 py-2">{ROLE_LABEL[user.roleId] ?? user.roleId}</td>
+      <td className="px-3 py-2">{ROLE_LABEL[user.role.name]}</td>
       <td className="px-3 py-2">{user.isActive ? 'Activo' : 'Inactivo'}</td>
       <td className="px-3 py-2">
         <div className="flex gap-2 whitespace-nowrap">
