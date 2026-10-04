@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Resultados de Playwright: se regeneran en cada corrida
+test-results
