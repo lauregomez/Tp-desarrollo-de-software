@@ -10,8 +10,6 @@ let userId: number;
 let matchId: number;
 
 // Crea una entrada del partido de prueba con el estado indicado.
-// reservedUntil sólo importa para las PENDING: es el vencimiento del hold.
-// Crea una entrada del partido de prueba con el estado indicado.
 async function addTicket(status: TicketStatus) {
   await prisma.ticket.create({
     data: { status, pricePaid: '2500.00', userId, matchId },
