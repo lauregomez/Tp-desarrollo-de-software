@@ -101,3 +101,38 @@ La fecha para el primer globalizador de regularidad y recuperatorio de AD será 
 La fecha para el segundo globalizador de regularidad y recuperatorio de AD será en el horario de clases entre los días 9/11/2025 y 13/11/2025.
 
 Nota: la fecha es estimada y puede cambiar según el progreso de los alumnos, cambios en el calendario académico, medidas de fuerza y otros imprevistos.
+
+## Tests
+
+### Backend (Vitest + Supertest)
+
+Usan una base MySQL aparte (`futsal_test`) que se borra y se recrea en cada corrida.
+
+1. Crear `backend/.env.test` copiando `backend/.env.test.example` y completar la contraseña de MySQL.
+2. Desde `backend/`:
+
+```bash
+npm test
+```
+
+### Frontend: test de componente (Vitest + Testing Library)
+
+Desde `frontend/`:
+
+```bash
+npm test
+```
+
+### Frontend: tests E2E (Playwright)
+
+La primera vez, instalar el navegador desde `frontend/`:
+
+```bash
+npx playwright install chromium
+```
+
+Después, con MySQL, el backend (`npm run dev`) y el frontend (`npm run dev`) levantados y la base de desarrollo con el seed cargado (`npx prisma db seed` desde `backend/`), desde `frontend/`:
+
+```bash
+npx playwright test
+```
