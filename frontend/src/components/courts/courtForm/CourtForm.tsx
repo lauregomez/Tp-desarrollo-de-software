@@ -15,17 +15,12 @@ import { getCourt } from './CourtForm.server'
 import type { Court, CreateCourtDto } from '../../../types/court'
 import type { Club } from '../../../types/club'
 
-// Input: los clubes para armar el desplegable llegan de CourtList, que ya los tiene.
-// Output: el formulario no guarda nada por su cuenta; avisa hacia arriba
-// y CourtList decide qué hacer con el resultado.
 interface CourtFormProps {
   clubs: Club[]
   onAdd: (court: CreateCourtDto) => void
   onEdit: (id: number, court: CreateCourtDto) => void
 }
 
-// El estado del form guarda todo como texto (así trabajan los inputs),
-// pero la cancha de la API trae números: convertimos al precargar.
 const toFormData = (court: Court) => ({
   name: court.name,
   address: court.address,
@@ -36,13 +31,9 @@ const toFormData = (court: Court) => ({
 export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
   const navigate = useNavigate()
 
-  // useParams devuelve los segmentos dinámicos de la URL, siempre string.
-  // Si hay :id estamos editando; si no, es un alta.
   const { id } = useParams<{ id: string }>()
   const isEditing = !!id
 
-  // La cancha que CourtList mandó en navigate(..., { state: court }).
-  // Puede no estar si se abre el link en otra pestaña o desde un marcador.
   const { state } = useLocation()
   const courtFromState = state as Court | null
 
@@ -51,15 +42,11 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
   )
   const [errors, setErrors] = useState(initialCourtErrors)
 
-  // Refs a los nodos reales: sólo para hacer focus() en el primer campo
-  // con error. Hacer foco es una acción sobre el DOM que no se expresa con props.
   const nameRef = useRef<HTMLInputElement>(null)
   const addressRef = useRef<HTMLInputElement>(null)
   const capacityRef = useRef<HTMLInputElement>(null)
   const clubRef = useRef<HTMLSelectElement>(null)
 
-  // Fallback: si estamos editando y no llegó el state (link directo),
-  // pedimos la cancha por su id para precargar el formulario.
   useEffect(() => {
     if (!isEditing || courtFromState) return
 
@@ -72,8 +59,6 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
     })
   }, [id, isEditing, courtFromState, navigate])
 
-  // Handler genérico con clave computada: sirve para los inputs y el select.
-  // Limpia el error del campo apenas el usuario empieza a corregir.
   const handleChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     attr: keyof typeof form,
@@ -84,16 +69,12 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
   }
 
   const handleSubmit = (event: FormEvent) => {
-    // Sin esto el navegador recarga la página y se pierde el estado.
     event.preventDefault()
 
     const address = form.address.trim()
-    // Sólo dígitos: Number() convierte "12e5" en 1200000, que es un entero
-    // válido. Con el regex, la notación científica y los decimales no pasan.
     const isDigitsOnly = /^\d+$/.test(form.capacity)
     const capacity = Number(form.capacity)
 
-    // Mismas reglas que valida el backend, para avisar antes de hacer la request.
     const newErrors = {
       name: form.name.trim() === '',
       address:
@@ -104,7 +85,6 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
 
     if (newErrors.name || newErrors.address || newErrors.capacity || newErrors.clubId) {
       setErrors(newErrors)
-      // Foco en el primer campo con error, en el orden en que aparecen.
       if (newErrors.name) nameRef.current?.focus()
       else if (newErrors.address) addressRef.current?.focus()
       else if (newErrors.capacity) capacityRef.current?.focus()
@@ -112,8 +92,6 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
       return
     }
 
-    // Los inputs devuelven texto y el backend exige enteros:
-    // convertimos acá, una sola vez, justo antes de enviar.
     const payload: CreateCourtDto = {
       name: form.name.trim(),
       address: form.address.trim(),
@@ -132,8 +110,6 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
     `rounded-lg border px-3 py-2 ${hasError ? 'border-brand' : 'border-slate-300'}`
 
   return (
-    // noValidate desactiva la validación nativa del navegador para que
-    // corra la nuestra (con mensajes en español y foco en el campo).
     <form
       onSubmit={handleSubmit}
       noValidate
@@ -190,10 +166,6 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
         <label htmlFor="capacity" className="text-sm font-medium">
           Capacidad
         </label>
-        {/* type="text" + inputMode="numeric" y no type="number": el number
-           cambia el valor con la rueda del mouse al scrollear y acepta
-           notación científica ("12e5"). Mismo criterio que ClubForm.
-           inputMode igual muestra el teclado numérico en el celular. */}
         <input
           ref={capacityRef}
           id="capacity"
@@ -222,7 +194,6 @@ export default function CourtForm({ clubs, onAdd, onEdit }: CourtFormProps) {
           onChange={(event) => handleChange(event, 'clubId')}
           className={inputClass(errors.clubId)}
         >
-          {/* value="" representa "sin elegir": la validación lo detecta. */}
           <option value="">Elegí un club</option>
           {clubs.map((club) => (
             <option key={club.id} value={club.id}>

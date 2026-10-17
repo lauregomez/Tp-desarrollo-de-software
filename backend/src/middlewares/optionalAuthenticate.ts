@@ -22,7 +22,6 @@ export function optionalAuthenticate(
     ) as AuthUser;
     req.user = payload;
   } catch {
-    // Token inválido: se ignora y el request sigue como anónimo.
   }
 
   next();

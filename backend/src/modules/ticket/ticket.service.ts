@@ -14,15 +14,6 @@ import {
 } from './ticket.types';
 import { matchEndsAt, endedMatchCutoff } from '../match/match.types';
 
-/**
- * Relaciones que se traen siempre junto al ticket.
- * El usuario se incluye porque el operador necesita ver a nombre de quién
- * está la entrada al validar en la puerta.
- *
- * `satisfies` valida la forma del objeto contra Prisma.TicketInclude pero
- * conserva el tipo literal, que es lo que permite derivar
- * TicketWithRelations más abajo sin escribirlo a mano.
- */
 const TICKET_INCLUDE = {
   match: {
     include: {
@@ -34,12 +25,6 @@ const TICKET_INCLUDE = {
   user: { select: { id: true, name: true, lastName: true, email: true } },
 } satisfies Prisma.TicketInclude;
 
-/**
- * Tipo del ticket con todas sus relaciones.
- * Se deriva del include en vez de usar ReturnType<typeof ticketService.findById>
- * porque eso último genera una referencia circular (el objeto se referiría
- * a sí mismo durante su propia definición) y TypeScript lo rechaza.
- */
 export type TicketWithRelations = Prisma.TicketGetPayload<{
   include: typeof TICKET_INCLUDE;
 }>;
@@ -49,8 +34,6 @@ const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const CODE_LENGTH = 4;
 const MAX_CODE_ATTEMPTS = 5;
 
-// randomInt usa el generador criptográfico del sistema. Math.random no sirve:
-// es predecible, y con suficientes muestras se podrían adivinar códigos válidos.
 function generateCode(): string {
   let code = '';
   for (let i = 0; i < CODE_LENGTH; i++) {
@@ -59,10 +42,6 @@ function generateCode(): string {
   return code;
 }
 
-// El código sólo tiene que ser único dentro del partido: el operador valida
-// siempre en el contexto del partido que está atendiendo. Con tantas
-// combinaciones, una colisión es casi imposible; el límite de intentos es
-// para no tener un bucle infinito teórico.
 async function generateUniqueCode(
   tx: Prisma.TransactionClient,
   matchId: number,
@@ -89,8 +68,6 @@ export const ticketService = {
         status: Array.isArray(filters.status)
           ? { in: filters.status }
           : filters.status,
-        // Terminado = empezó hace más de lo que dura un partido. Es el mismo
-        // criterio que usa toOwnerTicket para marcar `expired`.
         ...(filters.matchEnded !== undefined && {
           match: {
             startsAt: filters.matchEnded ? { lte: cutoff } : { gt: cutoff },
@@ -109,10 +86,6 @@ export const ticketService = {
     });
   },
 
-  /**
-   * Busca una entrada por su código dentro de un partido.
-   * El código sólo es único dentro del partido, así que se necesitan los dos.
-   */
   async findByCode(
     matchId: number,
     code: string,
@@ -123,20 +96,10 @@ export const ticketService = {
     });
   },
 
-    /**
-   * Reserva N entradas en estado PENDING: representan el intento de compra
-   * que después se asocia a la orden de MercadoPago.
-   *
-   * Las validaciones de cupo y de límite por usuario son preliminares:
-   * evitan iniciar un pago que ya se sabe que no va a entrar. La validación
-   * definitiva se repite al confirmar el pago, porque recién ahí la entrada
-   * pasa a ocupar lugar.
-   */
   async reserve(
     dto: ReserveTicketDto,
   ): Promise<ServiceResult<TicketWithRelations[], ReserveFailureReason>> {
     return prisma.$transaction(async (tx) => {
-      // 1. Traer el partido junto con la capacidad de la cancha.
       const match = await tx.match.findUnique({
         where: { id: dto.matchId },
         include: { court: { select: { capacity: true } } },
@@ -146,20 +109,14 @@ export const ticketService = {
         return { ok: false as const, reason: 'MATCH_NOT_FOUND' as const };
       }
 
-      // Sólo se venden entradas de partidos publicados.
       if (match.status !== MatchStatus.PUBLISHED) {
         return { ok: false as const, reason: 'MATCH_NOT_PUBLISHED' as const };
       }
 
-      // Se vende hasta que termina el partido, no hasta que empieza:
-      // contempla a los que llegan tarde. Es el mismo corte que usa el listado.
       if (matchEndsAt(match.startsAt).getTime() <= Date.now()) {
         return { ok: false as const, reason: 'MATCH_ALREADY_FINISHED' as const };
       }
 
-      // 2. Límite de 5 entradas por usuario y por partido.
-      //    Sólo cuentan las pagas: si contáramos las PENDING, un usuario que
-      //    abandonó un par de intentos de compra quedaría bloqueado.
       const userTickets = await tx.ticket.count({
         where: {
           userId: dto.userId,
@@ -172,9 +129,6 @@ export const ticketService = {
         return { ok: false as const, reason: 'USER_LIMIT_EXCEEDED' as const };
       }
 
-      // 3. Cupo del partido: capacity del partido pisa la de la cancha.
-      //    La cancha puede haber sido eliminada (court es null): en ese
-      //    caso, sin capacity propia, el partido no tiene cupo.
       const capacity = match.capacity ?? match.court?.capacity ?? 0;
       const occupied = await tx.ticket.count({
         where: { matchId: dto.matchId, status: { in: SOLD_STATUSES } },
@@ -184,9 +138,6 @@ export const ticketService = {
         return { ok: false as const, reason: 'NOT_ENOUGH_CAPACITY' as const };
       }
 
-      // 4. Crear N tickets independientes (cada uno tendrá su propio código).
-      //    createMany no devuelve las filas creadas en MySQL, así que se
-      //    crean de a uno. Con un máximo de 5 el costo es despreciable.
       const created: TicketWithRelations[] = [];
 
       for (let i = 0; i < dto.quantity; i++) {
@@ -194,9 +145,8 @@ export const ticketService = {
           data: {
             userId: dto.userId,
             matchId: dto.matchId,
-            pricePaid: match.price, // snapshot del precio al momento de reservar
+            pricePaid: match.price,
             status: TicketStatus.PENDING,
-            // code queda null: recién se genera cuando el pago se confirma
           },
           include: TICKET_INCLUDE,
         });
@@ -207,20 +157,6 @@ export const ticketService = {
     });
   },
 
-    /**
-   * Confirma las entradas de una orden de pago aprobada.
-   * La llama el webhook de MercadoPago.
-   *
-   * Recibe los ids concretos porque son los que viajan en el
-   * external_reference de la orden: deducirlos por usuario y partido
-   * confirmaría también reservas hechas después de iniciar el pago.
-   *
-   * Filtrar por PENDING da idempotencia: MercadoPago reintenta las
-   * notificaciones y en la segunda no queda nada para confirmar.
-   *
-   * No se revalida el cupo: si el pago se aprobó, la entrada se entrega.
-   * El control de cupo y de límite por usuario se hace al reservar.
-   */
   async confirmPayment(
     ticketIds: number[],
     mpPaymentId: string,
@@ -237,25 +173,16 @@ export const ticketService = {
       const confirmed: TicketWithRelations[] = [];
 
       for (const { id, matchId } of pending) {
-        // El status va también en el where del update: con dos notificaciones
-        // simultáneas, las dos pasan el findMany, pero el UPDATE relee la fila
-        // después de esperar el lock y solo una la encuentra PENDING. Sin esto,
-        // la segunda regeneraría el código y el que ya tiene el usuario
-        // dejaría de valer. updateMany en vez de update porque no tira error
-        // cuando no hay coincidencia.
         const { count } = await tx.ticket.updateMany({
           where: { id, status: TicketStatus.PENDING },
           data: {
             status: TicketStatus.ACTIVE,
             code: await generateUniqueCode(tx, matchId),
             mpPaymentId,
-            // mpOrderId se conserva: es la trazabilidad de la orden y lo que
-            // permite reencontrar estos tickets cuando MercadoPago reintenta
-            // la notificación.
           },
         });
 
-        if (count === 0) continue; // otra notificación la confirmó primero
+        if (count === 0) continue;
 
         const ticket = await tx.ticket.findUniqueOrThrow({
           where: { id },
@@ -268,10 +195,6 @@ export const ticketService = {
     });
   },
 
-    /**
-   * Trae los tickets de una compra para validarlos antes de crear la orden.
-   * Devuelve sólo lo necesario para decidir si el pago puede iniciarse.
-   */
   async findForPayment(ticketIds: number[]) {
     return prisma.ticket.findMany({
       where: { id: { in: ticketIds } },
@@ -286,12 +209,6 @@ export const ticketService = {
     });
   },
 
-  /**
-   * Asocia la orden de MercadoPago a los tickets.
-   *
-   * Sólo actualiza las PENDING: una entrada ya confirmada conserva la orden
-   * con la que se pagó.
-   */
   async attachOrder(ticketIds: number[], mpOrderId: string): Promise<number> {
     const { count } = await prisma.ticket.updateMany({
       where: { id: { in: ticketIds }, status: TicketStatus.PENDING },
@@ -300,13 +217,6 @@ export const ticketService = {
     return count;
   },
 
-  /**
-   * Trae los tickets asociados a una orden de MercadoPago.
-   *
-   * La base es la fuente de verdad sobre qué entradas cubre la orden: el
-   * external_reference de la notificación es un dato externo y sólo se usa
-   * para contrastar.
-   */
   async findByOrderId(mpOrderId: string) {
     return prisma.ticket.findMany({
       where: { mpOrderId },
@@ -314,36 +224,13 @@ export const ticketService = {
     });
   },
 
-  /**
-   * Libera las entradas de una orden que no llegó a pagarse.
-   *
-   * Sólo borra las PENDING: una ACTIVE ya tiene el pago acreditado y el código
-   * emitido, y no se toca aunque la orden figure cancelada.
-   *
-   * Es el mismo criterio de releaseExpired --liberar es borrar la fila-- pero
-   * por orden en vez de por vencimiento: acá se sabe que la orden murió y no
-   * hace falta esperar a que venza el hold.
-   *
-   * El estado va dentro del where del delete y no en una búsqueda previa para
-   * que las dos condiciones se resuelvan en la misma sentencia: si entre medio
-   * se acreditara el pago, esos tickets quedarían ACTIVE y el delete ya no los
-   * alcanzaría.
-   */
   async releaseByOrderId(mpOrderId: string): Promise<number> {
     const { count } = await prisma.ticket.deleteMany({
       where: { mpOrderId, status: TicketStatus.PENDING },
     });
     return count;
   },
-  
-  /**
-   * Marca una entrada como usada al ingresar al evento.
-   *
-   * La condición `status: ACTIVE` dentro del where es lo que evita el doble
-   * uso: si dos operadores validan el mismo código simultáneamente, el segundo
-   * update no encuentra fila y Prisma lanza P2025, que validate
-   * traduce a TICKET_ALREADY_USED.
-   */
+
   async markAsUsed(id: number): Promise<TicketWithRelations> {
     return prisma.ticket.update({
       where: { id, status: TicketStatus.ACTIVE },
@@ -352,11 +239,6 @@ export const ticketService = {
     });
   },
 
-  /**
-   * Caso de uso del operador en la puerta.
-   * Los chequeos previos existen para devolver un motivo preciso; la
-   * garantía real contra el doble uso es el update condicional de markAsUsed.
-   */
   async validate(
     matchId: number,
     code: string,
@@ -380,7 +262,6 @@ export const ticketService = {
       const used = await this.markAsUsed(ticket.id);
       return { ok: true, data: used };
     } catch (error) {
-      // P2025: otro operador la validó entre el chequeo y el update.
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2025'
@@ -404,14 +285,6 @@ export const ticketService = {
   },
 };
 
-/**
- * Vista para el dueño de la entrada.
- * Incluye el code porque es lo que el usuario le dice al operador.
- * Oculta los datos del usuario, que ya conoce.
- *
- * `expired` no es un estado guardado: se deduce de la hora, igual que el
- * listado de partidos. Así no depende de que el admin finalice el partido.
- */
 export function toOwnerTicket(ticket: TicketWithRelations) {
   const { user, ...rest } = ticket;
   const expired =
@@ -421,10 +294,6 @@ export function toOwnerTicket(ticket: TicketWithRelations) {
   return { ...rest, expired };
 }
 
-/**
- * Vista para el operador que valida en la puerta.
- * Muestra el titular pero oculta datos de pago, que no le competen.
- */
 export function toOperatorTicket(ticket: TicketWithRelations) {
   const { mpPaymentId, pricePaid, ...rest } = ticket;
   return rest;

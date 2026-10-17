@@ -12,7 +12,6 @@ interface BuyTicketsProps {
   soldOut: boolean
 }
 
-// Opciones del selector: [1, 2, 3, 4, 5].
 const QUANTITY_OPTIONS = Array.from(
   { length: MAX_TICKETS_PER_MATCH },
   (_, index) => index + 1,
@@ -24,8 +23,6 @@ export default function BuyTickets({ matchId, soldOut }: BuyTicketsProps) {
   const { user } = useAuth()
 
   const [quantity, setQuantity] = useState(1)
-  // Evita el doble clic: dos clics rápidos crearían dos reservas y dos
-  // órdenes de pago para la misma compra.
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (soldOut) {
@@ -37,8 +34,6 @@ export default function BuyTickets({ matchId, soldOut }: BuyTicketsProps) {
   }
 
   const handleBuy = () => {
-    // Mismo mecanismo que Protected: guardamos la ruta actual en state.from
-    // para que Login nos devuelva a este partido después de ingresar.
     if (!user) {
       navigate('/login', { state: { from: location } })
       return
@@ -48,17 +43,10 @@ export default function BuyTickets({ matchId, soldOut }: BuyTicketsProps) {
 
     startPurchase(matchId, quantity, {
       onSuccess: ({ ticketIds, checkoutUrl }) => {
-        // Se guarda antes de salir: al volver de MercadoPago es lo único
-        // que tiene PaymentConfirming para saber qué entradas consultar.
         sessionStorage.setItem(PENDING_PURCHASE_KEY, JSON.stringify(ticketIds))
-        // window.location y no navigate: el checkout es otro sitio, y
-        // navigate sólo mueve entre rutas de esta app. No se vuelve a
-        // habilitar el botón porque la página se está yendo.
         window.location.href = checkoutUrl
       },
       onError: (error) => {
-        // Acá llegan los rechazos del backend con su mensaje, por ejemplo
-        // el límite de 5 entradas o un partido que ya empezó.
         errorToast(error.message)
         setIsSubmitting(false)
       },

@@ -5,9 +5,6 @@ import ClubLogo from '../../shared/clubLogo/ClubLogo'
 import ConfirmModal from '../../confirmModal/ConfirmModal'
 import type { Club } from '../../../types/club'
 
-// Input properties: el club entra por props, ClubItem no lo pide al servidor.
-// Output properties: onEdit y onDelete son callbacks del padre; este componente
-// sólo avisa qué quiso hacer el usuario y ClubList decide qué significa.
 interface ClubItemProps {
   club: Club
   onEdit: (club: Club) => void
@@ -15,14 +12,9 @@ interface ClubItemProps {
 }
 
 export default function ClubItem({ club, onEdit, onDelete }: ClubItemProps) {
-  // Estado local: el modal es efímero, no hace falta una ruta para él
-  // (nadie quiere compartir el link de "¿estás seguro?").
-  // Vive acá y no en ClubList para que cada tarjeta tenga el suyo.
   const [confirmOpen, setConfirmOpen] = useState(false)
   const navigate = useNavigate()
 
-  // Cerramos el modal antes de avisar hacia arriba, así la tarjeta
-  // no queda con el diálogo abierto mientras se procesa el borrado.
   const handleConfirmDelete = () => {
     setConfirmOpen(false)
     onDelete(club.id)
@@ -48,13 +40,9 @@ export default function ClubItem({ club, onEdit, onDelete }: ClubItemProps) {
         >
           Ver detalle
         </Button>
-        {/* Mandamos el club entero hacia arriba: ClubList lo va a pasar
-            en el state de la navegación para precargar el formulario. */}
         <Button variant="primary" size="sm" onClick={() => onEdit(club)}>
           Editar
         </Button>
-        {/* Este botón NO borra: abre el modal. El borrado real
-            ocurre recién en handleConfirmDelete. */}
         <Button
           variant="danger"
           size="sm"

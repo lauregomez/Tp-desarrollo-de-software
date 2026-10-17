@@ -16,8 +16,6 @@ export default function ClubList() {
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
 
-  // Carga inicial. El array de dependencias vacío hace que corra
-  // una sola vez, al montar el componente.
   useEffect(() => {
     getClubs({
       onSuccess: (data) => {
@@ -33,16 +31,11 @@ export default function ClubList() {
 
   const handleAddClub = (club: CreateClubDto) => {
     createClub(club, {
-      // Actualizamos el array local con lo que devolvió el servidor
-      // en vez de volver a pedir la lista entera: una request menos.
       onSuccess: (created) => {
         setClubs((prev) => [created, ...prev])
         successToast(`¡Club ${created.name} creado correctamente!`)
-        // Navegamos acá y no en el formulario: recién ahora sabemos
-        // que el guardado salió bien.
         navigate('/clubes', { replace: true })
       },
-      // error.message viene del backend (por ej. el 409 de nombre duplicado).
       onError: (error) => errorToast(error.message),
     })
   }
@@ -62,26 +55,18 @@ export default function ClubList() {
 
   const handleDeleteClub = (id: number) => {
     deleteClub(id, {
-      // El 204 no devuelve cuerpo: el .server.ts nos pasa el id
-      // que le dimos, y con eso filtramos la lista.
       onSuccess: (deletedId) => {
         setClubs((prev) => prev.filter((c) => c.id !== deletedId))
         successToast('¡Club eliminado correctamente!')
       },
-      // Acá cae el 409 si el club tiene canchas o partidos asociados.
       onError: (error) => errorToast(error.message),
     })
   }
 
-  // Navegamos llevando el club en el state para que el formulario
-  // se precargue sin pedirlo de nuevo al servidor.
   const handleEditClub = (club: Club) => {
     navigate(`/clubes/editar/${club.id}`, { state: club })
   }
 
-  // Usamos el id del backend como key, nunca el índice del array:
-  // si se borra un club del medio, los índices se corren y React
-  // podría reutilizar el nodo equivocado.
   const clubsMapped = clubs.map((club) => (
     <ClubItem
       key={club.id}
@@ -93,8 +78,6 @@ export default function ClubList() {
 
   return (
     <div>
-      {/* El header está FUERA del <Routes>: se ve en las cuatro
-          sub-rutas y actúa como layout de la sección. */}
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-navy md:text-3xl">Clubes</h1>
         <Button variant="primary" onClick={() => navigate('/clubes/nuevo')}>
@@ -103,7 +86,6 @@ export default function ClubList() {
       </header>
 
       <Routes>
-        {/* <Route index> es la ruta por defecto del grupo: /clubes exacto */}
         <Route
           index
           element={
@@ -122,9 +104,6 @@ export default function ClubList() {
           }
         />
 
-        {/* Los path no empiezan con "/" porque son relativos a /clubes.
-            "nuevo" y "editar/:id" renderizan el MISMO componente: el
-            formulario decide solo en qué modo está. */}
         <Route
           path="nuevo"
           element={<ClubForm onAdd={handleAddClub} onEdit={handleUpdateClub} />}
@@ -135,8 +114,6 @@ export default function ClubList() {
         />
         <Route path=":id" element={<ClubDetails />} />
 
-        {/* Captura sub-rutas inválidas de /clubes (por ej. /clubes/a/b).
-            Sin esto se vería el header con el cuerpo vacío. */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </div>

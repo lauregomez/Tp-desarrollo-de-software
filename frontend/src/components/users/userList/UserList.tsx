@@ -31,14 +31,11 @@ export default function UserList() {
 
   const handleAdd = (user: CreateUserDto, onFinish: () => void) => {
     createUser(user, {
-      // Actualizamos el array local con lo que devolvió el servidor
-      // en vez de volver a pedir la lista entera: una request menos.
       onSuccess: (created) => {
         setUsers((prev) => [created, ...prev])
         successToast(`¡Usuario ${created.name} creado correctamente!`)
         navigate('/admin/usuarios', { replace: true })
       },
-      // Acá cae el 409 por email duplicado.
       onError: (error) => {
         errorToast(error.message)
         onFinish()
@@ -51,8 +48,6 @@ export default function UserList() {
     user: CreateUserDto,
     onFinish: () => void,
   ) => {
-    // Un admin no puede quitarse a sí mismo el rol de admin: perdería
-    // el acceso al panel en el que está parado.
     if (id === currentUser?.id && user.role !== 'ADMIN') {
       errorToast('No podés quitarte a vos mismo el rol de administrador')
       onFinish()
@@ -76,14 +71,10 @@ export default function UserList() {
 
   const handleDeactivate = (id: number) => {
     deactivateUser(id, {
-      // El backend devuelve el usuario actualizado: lo reemplazamos en
-      // la lista en vez de sacarlo, porque sigue existiendo y el admin
-      // tiene que poder reactivarlo.
       onSuccess: (updated) => {
         setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
         successToast('¡Usuario desactivado correctamente!')
       },
-      // Acá cae el 409 si el usuario tiene entradas sin usar.
       onError: (error) => errorToast(error.message),
     })
   }
@@ -97,8 +88,6 @@ export default function UserList() {
       onError: (error) => errorToast(error.message),
     })
   }
-  // Navegamos llevando el usuario en el state para que el formulario
-  // se precargue sin pedirlo de nuevo al servidor.
   const handleEdit = (user: User) => {
     navigate(`/admin/usuarios/editar/${user.id}`, { state: user })
   }
@@ -116,8 +105,6 @@ export default function UserList() {
 
   return (
     <div>
-      {/* El header está FUERA del <Routes>: se ve en las tres
-          sub-rutas y actúa como layout de la sección. */}
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-navy md:text-3xl">Usuarios</h1>
         <Button
@@ -135,8 +122,6 @@ export default function UserList() {
             isLoading ? (
               <p className="text-muted">Cargando usuarios…</p>
             ) : rows.length > 0 ? (
-              // overflow-x-auto: en mobile la tabla scrollea sola
-              // en vez de romper el ancho de la página.
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 text-muted">
@@ -160,8 +145,6 @@ export default function UserList() {
           }
         />
 
-        {/* "nuevo" y "editar/:id" renderizan el MISMO componente:
-            el formulario decide solo en qué modo está. */}
         <Route
           path="nuevo"
           element={<UserForm onAdd={handleAdd} onEdit={handleUpdate} />}

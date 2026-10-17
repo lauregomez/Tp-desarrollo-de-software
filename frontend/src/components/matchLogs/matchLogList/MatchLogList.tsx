@@ -40,7 +40,6 @@ export default function MatchLogList() {
               <span className="font-medium text-navy">{log.description}</span>
               <span className="text-sm text-muted">
                 {formatShortDate(log.createdAt)} · {formatTime(log.createdAt)} hs
-                {/* El usuario puede haberse borrado: el registro queda igual. */}
                 {log.createdBy && ` · por ${log.createdBy.name} ${log.createdBy.lastName}`}
               </span>
             </li>

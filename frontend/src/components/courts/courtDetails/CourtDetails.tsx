@@ -6,8 +6,6 @@ import { getCourt } from './CourtDetails.server'
 import type { Court } from '../../../types/court'
 import type { Club } from '../../../types/club'
 
-// Los clubes llegan desde CourtList, que ya los tiene cargados:
-// así no hacemos otra request sólo para resolver el nombre del dueño.
 interface CourtDetailsProps {
   clubs: Club[]
 }
@@ -18,13 +16,10 @@ export default function CourtDetails({ clubs }: CourtDetailsProps) {
   const { state } = useLocation()
   const courtFromState = state as Court | null
 
-  // Si venimos con la cancha en el state, arrancamos con el dato puesto
-  // y sin loading: no hay request ni parpadeo de carga.
   const [court, setCourt] = useState<Court | null>(courtFromState ?? null)
   const [isLoading, setIsLoading] = useState(!courtFromState)
 
   useEffect(() => {
-    // Ya tenemos la cancha (o no hay id que pedir): no hace falta la request.
     if (courtFromState || !id) return
 
     getCourt(id, {
@@ -32,7 +27,6 @@ export default function CourtDetails({ clubs }: CourtDetailsProps) {
         setCourt(data)
         setIsLoading(false)
       },
-      // Sin toast: el bloque de "no encontrada" de abajo ya explica qué pasó.
       onError: () => setIsLoading(false),
     })
   }, [id, courtFromState])
@@ -41,8 +35,6 @@ export default function CourtDetails({ clubs }: CourtDetailsProps) {
     return <p className="text-muted">Cargando cancha…</p>
   }
 
-  // El id no existe o falló la conexión. Sin este bloque,
-  // el JSX de abajo rompería al leer court.name de null.
   if (!court) {
     return (
       <div className="flex flex-col items-start gap-4">
@@ -69,8 +61,6 @@ export default function CourtDetails({ clubs }: CourtDetailsProps) {
         <Button variant="secondary" onClick={() => navigate('/canchas')}>
           Volver
         </Button>
-        {/* Mandamos la cancha en el state para que el formulario
-           se precargue sin pedirla de nuevo. Mismo criterio que ClubDetails. */}
        <Button
          variant="primary"
          onClick={() => navigate(`/canchas/editar/${court.id}`, { state: court })}

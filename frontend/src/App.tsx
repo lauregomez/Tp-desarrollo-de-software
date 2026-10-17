@@ -21,8 +21,6 @@ import MatchLogList from './components/matchLogs/matchLogList/MatchLogList'
 import TicketValidation from './components/tickets/ticketValidation/TicketValidation'
 
 export default function App() {
-  // La sesión se lee acá y baja por props a Protected, que se mantiene
-  // como un componente puro sin dependencia del contexto.
   const { user } = useAuth()
 
   return (
@@ -32,12 +30,8 @@ export default function App() {
           <Route path="/" element={<MatchList />} />
           <Route path="/partidos/:id" element={<MatchDetails />} />
 
-          {/* Vuelta de MercadoPago cuando el pago se rechaza. Es pública:
-              no consulta nada, así que no hace falta pedir sesión. */}
           <Route path="/pago/error" element={<PaymentError />} />
 
-          {/* Sólo un ADMIN entra acá. La sesión se lee de localStorage
-              antes del primer render, así que un F5 no expulsa al login. */}
           <Route
             element={
               <Protected
@@ -47,9 +41,6 @@ export default function App() {
               />
             }
           >
-            {/* El /* delega el resto del camino al <Routes> interno de
-                ClubList: así el estado y los handlers del CRUD viven a
-                ese nivel y no hay que subirlos a App. */}
             <Route path="/clubes/*" element={<ClubList />} />
             <Route path="/canchas/*" element={<CourtList />} />
             <Route path="/admin/usuarios/*" element={<UserList />} />
@@ -57,9 +48,6 @@ export default function App() {
             <Route path="/admin/historial" element={<MatchLogList />} />
           </Route>
 
-          {/* Validación en la puerta: la usa el OPERATOR, y el ADMIN también
-              puede. Esto sólo evita mostrar una pantalla que no le sirve a
-              un USER; la protección real es authorize en el backend. */}
           <Route
             element={
               <Protected
@@ -72,13 +60,8 @@ export default function App() {
             <Route path="/validar-entradas" element={<TicketValidation />} />
           </Route>
 
-          {/* Cualquier usuario logueado ve sus propias entradas: este
-              Protected no pasa roles, así que sólo exige sesión. El
-              backend igual devuelve únicamente las del token. */}
           <Route element={<Protected isSignedIn={user !== null} />}>
             <Route path="/mis-entradas/*" element={<MyTicketList />} />
-            {/* Vuelta de MercadoPago con el pago aprobado o pendiente.
-                Necesita sesión porque consulta la entrada del usuario. */}
             <Route path="/pago/confirmando" element={<PaymentConfirming />} />
           </Route>
         </Route>
@@ -88,13 +71,9 @@ export default function App() {
           <Route path="/registro" element={<Register />} />
         </Route>
 
-        {/* path="*" matchea cualquier URL que no haya matcheado antes.
-            Va último porque React Router elige la ruta más específica. */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
 
-      {/* Un solo ToastContainer para toda la app: successToast y
-          errorToast (src/shared/notifications.ts) escriben acá. */}
       <ToastContainer />
     </>
   )

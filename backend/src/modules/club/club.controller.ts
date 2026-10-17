@@ -2,9 +2,9 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { clubService } from './club.service';
 
-const MAX_LOGO_URL_LENGTH = 500; // igual que el VARCHAR(500) de la columna
+const MAX_LOGO_URL_LENGTH = 500;
 const MAX_DESCRIPTION_LENGTH = 1000;
-const MIN_FOUNDED_YEAR = 1850; // hay clubes de Rosario fundados en el siglo XIX
+const MIN_FOUNDED_YEAR = 1850;
 
 type OptionalClubFields = {
   logoUrl?: string | null;
@@ -14,8 +14,6 @@ type OptionalClubFields = {
 
 type ParseResult<T> = { error: string } | { value: T };
 
-// Un texto opcional vacío se guarda como null: así "sin descripción" se
-// representa de una sola forma en la base.
 const parseOptionalText = (
   value: unknown,
   label: string,
@@ -32,9 +30,6 @@ const parseOptionalText = (
   return { value: trimmed };
 };
 
-// El parser nativo acepta cualquier esquema, así que además exigimos http(s):
-// una URL como "javascript:..." es válida para new URL() y terminaría en el src
-// de una imagen del frontend.
 const isHttpUrl = (value: string): boolean => {
   try {
     const url = new URL(value);
@@ -44,8 +39,6 @@ const isHttpUrl = (value: string): boolean => {
   }
 };
 
-// El middleware ya descartó los undefined, así que que la clave esté presente
-// significa que el cliente mandó el campo: con null pide borrarlo.
 const parseOptionalClubFields = (
   input: Record<string, unknown>,
 ): { error: string } | { data: OptionalClubFields } => {

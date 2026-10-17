@@ -10,16 +10,12 @@ interface MultiSelectProps<T extends string | number> {
   onChange: (selected: T[]) => void
 }
 
-// Genérico en T: sirve para ids (number) y para estados (string)
-// sin duplicar el componente.
 export default function MultiSelect<T extends string | number>({
   label,
   options,
   selected,
   onChange,
 }: MultiSelectProps<T>) {
-  // Si ya estaba marcado lo saca, y si no, lo agrega. No toca los demás:
-  // por eso las opciones se acumulan.
   const toggle = (value: T) => {
     onChange(
       selected.includes(value)
@@ -29,8 +25,6 @@ export default function MultiSelect<T extends string | number>({
   }
 
   return (
-    // <details> abre y cierra la lista al tocar el <summary>
-    // sin necesidad de un estado propio.
     <details className="relative">
       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm [&::-webkit-details-marker]:hidden">
         <span className="font-medium">{label}</span>
@@ -50,8 +44,6 @@ export default function MultiSelect<T extends string | number>({
             key={option.value}
             className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-canvas"
           >
-            {/* Checkbox nativo dibujado como círculo: vacío = no filtra,
-                lleno = filtra por esta opción. */}
             <input
               type="checkbox"
               checked={selected.includes(option.value)}

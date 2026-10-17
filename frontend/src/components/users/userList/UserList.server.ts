@@ -2,7 +2,6 @@ import { apiFetch } from '../../../lib/api'
 import type { Callbacks } from '../../../lib/api'
 import type { User, CreateUserDto, UpdateUserDto } from '../../../types/user'
 
-// Todas las rutas de este recurso piden rol ADMIN en el backend.
 const RESOURCE = '/users'
 
 export const getUsers = ({ onSuccess, onError }: Callbacks<User[]>) => {
@@ -36,9 +35,6 @@ export const updateUser = (
     .catch(onError)
 }
 
-// El backend responde 204 sin cuerpo, así que le pasamos al onSuccess
-// el id que ya teníamos para sacar el usuario de la lista sin volver
-// a pedirla entera.
 export const deactivateUser = (
   id: number,
   { onSuccess, onError }: Callbacks<User>,

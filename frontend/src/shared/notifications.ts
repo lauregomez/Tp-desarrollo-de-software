@@ -1,8 +1,6 @@
 import { toast } from 'react-toastify'
 import type { ToastOptions } from 'react-toastify'
 
-// Config por defecto compartida por todos los avisos, para que no haya
-// que repetirla en cada llamada. El config opcional la pisa por caso.
 const DEFAULT_CONFIG: ToastOptions = {
   position: 'top-right',
   autoClose: 3000,

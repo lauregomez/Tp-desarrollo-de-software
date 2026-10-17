@@ -20,8 +20,6 @@ export const authService = {
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) return { ok: false as const, reason: 'INVALID' as const };
 
-    // Un usuario dado de baja no puede ingresar, aunque sus credenciales
-    // sigan siendo correctas.
     if (!user.isActive) {
       return { ok: false as const, reason: 'INACTIVE' as const };
     }

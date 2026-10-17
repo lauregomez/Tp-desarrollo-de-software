@@ -15,18 +15,14 @@ import type {
 interface MatchFiltersProps {
   filters: MatchFilterValues
   onChange: (filters: MatchFilterValues) => void
-  // El listado público no muestra el estado: ahí solo hay partidos publicados.
   showStatus?: boolean
 }
 
-// Opciones de estado para el MultiSelect, armadas una sola vez.
 const STATUS_OPTIONS = (Object.keys(STATUS_LABEL) as MatchStatus[]).map((status) => ({
   value: status,
   label: STATUS_LABEL[status],
 }))
 
-// Una lista vacía pasa a undefined: así ese filtro no se manda
-// y la pantalla sabe que no hay nada elegido.
 const orUndefined = <T,>(values: T[]) => (values.length > 0 ? values : undefined)
 
 export default function MatchFilters({
@@ -36,8 +32,6 @@ export default function MatchFilters({
 }: MatchFiltersProps) {
   const [clubs, setClubs] = useState<ClubSummary[]>([])
   const [courts, setCourts] = useState<CourtSummary[]>([])
-  // El texto vive aparte y se aplica recién al buscar: si se aplicara en
-  // cada tecla, habría un pedido al backend por cada letra.
   const [search, setSearch] = useState(filters.q ?? '')
 
   useEffect(() => {
@@ -45,7 +39,6 @@ export default function MatchFilters({
     getCourtOptions({ onSuccess: setCourts, onError: (error) => errorToast(error.message) })
   }, [])
 
-  // Enter en el input o click en la lupa: los dos envían el form.
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     onChange({ ...filters, q: search.trim() || undefined })
@@ -89,7 +82,6 @@ export default function MatchFilters({
           className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
         />
         <Button type="submit" aria-label="Buscar">
-          {/* Ícono de lupa dibujado en SVG: no agrega ninguna librería. */}
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />

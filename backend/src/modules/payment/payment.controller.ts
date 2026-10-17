@@ -17,14 +17,6 @@ function requireUser(req: Request) {
 }
 
 export const paymentController = {
-  /**
-   * POST /api/payments/orders
-   * Body: { ticketIds: number[] }
-   *
-   * Crea la orden en MercadoPago y devuelve la URL del checkout.
-   * Los tickets tienen que estar reservados de antemano: este endpoint
-   * no crea entradas, sólo inicia el pago de las que ya existen.
-   */
   async createOrder(req: Request, res: Response): Promise<void> {
     const user = requireUser(req);
     const { ticketIds } = req.body;
@@ -54,8 +46,6 @@ export const paymentController = {
       return;
     }
 
-    // El userId sale del token: sin esto se podrían pagar entradas ajenas,
-    // o peor, incluir ids ajenos en la orden para que el webhook los active.
     if (tickets.some((t) => t.userId !== user.userId)) {
       res.status(404).json({ message: 'Alguna de las entradas no existe' });
       return;
@@ -75,8 +65,6 @@ export const paymentController = {
       return;
     }
 
-    // Una orden por partido: el external_reference no distingue partidos y
-    // el precio unitario tiene que ser el mismo para todos los ítems.
     const matchId = tickets[0].matchId;
     if (tickets.some((t) => t.matchId !== matchId)) {
       res.status(400).json({
@@ -91,9 +79,6 @@ export const paymentController = {
       return;
     }
 
-       // Los clubes pueden estar eliminados (null) desde que se conserva el
-    // historial de partidos. Para el título del ítem en MercadoPago alcanza
-    // con un texto genérico: el pago no depende de ese nombre.
     const homeName = match.match.homeClub?.name ?? 'Club eliminado';
     const awayName = match.match.awayClub?.name ?? 'Club eliminado';
     const matchTitle = `${homeName} vs ${awayName}`;
@@ -116,20 +101,7 @@ export const paymentController = {
     res.status(201).json({ checkoutUrl: order.checkoutUrl });
   },
 
-  /**
-   * POST /api/payments/webhook
-   *
-   * Notificación de MercadoPago. No lleva authenticate: la autenticidad se
-   * establece con la firma, no con un token propio.
-   *
-   * Criterio de códigos: todo lo que no tenga arreglo reintentando responde
-   * 200 y queda en el log. Sólo los fallos transitorios se dejan propagar
-   * para que el errorHandler devuelva 500 y MercadoPago vuelva a notificar.
-   */
   async handleWebhook(req: Request, res: Response): Promise<void> {
-    // La firma se verifica antes que nada: hasta confirmar el origen, nada
-    // de lo que llega es confiable.
-        // TEMPORAL: diagnóstico de la firma. Borrar antes de commitear.
     const dataId = req.query['data.id'];
     const check = paymentService.verifyWebhookSignature({
       xSignature: req.headers['x-signature'],
@@ -138,9 +110,6 @@ export const paymentController = {
     });
 
     if (!check.valid) {
-      // Se loguean el motivo y el x-request-id, que es lo que identifica a la
-      // notificación en el panel de MercadoPago. La firma recibida no se
-      // loguea nunca.
       console.error(
         '[webhook] firma rechazada:',
         check.reason,
@@ -153,9 +122,6 @@ export const paymentController = {
 
     const notification = req.body as WebhookNotification;
 
-    // Sólo interesan las órdenes. El resto se acepta para que MercadoPago
-    // deje de reintentarlas, pero queda registrado: sin esta línea, una
-    // notificación de tipo inesperado se descarta sin dejar rastro.
     if (notification?.type !== 'order') {
       console.log('[webhook] notificación ignorada, tipo:', notification?.type);
       res.status(200).end();
@@ -168,7 +134,6 @@ export const paymentController = {
       return;
     }
 
-    // El body podría estar adulterado: la orden se pide a MercadoPago.
     const order = await paymentService.getOrder(dataId);
 
     if (!order) {
@@ -177,8 +142,6 @@ export const paymentController = {
       return;
     }
 
-    // El id de la orden se resuelve acá porque lo necesitan tanto el camino
-    // de confirmación como el de liberación.
     const orderId = order.id;
 
     if (!orderId) {
@@ -189,10 +152,6 @@ export const paymentController = {
 
     const action = notification.action;
 
-    // Un reembolso supone una entrada ya confirmada, con código emitido y quizás
-    // ya usada en la puerta. Revertirlo no es simétrico a liberar una reserva:
-    // hay que decidir qué pasa con el acceso al partido y con el dinero, y eso
-    // excede al webhook. Queda registrado para revisión manual.
     if (action === 'order.refunded') {
       console.error(
         '[webhook] orden reembolsada, requiere revisión manual:',
@@ -203,15 +162,6 @@ export const paymentController = {
     }
 
     if (action === 'order.canceled' || action === 'order.expired') {
-      // El action viaja en el body y el body no entra en la firma: antes de
-      // borrar nada se confirma el desenlace contra el estado que devolvió
-      // MercadoPago. Sin esto, reenviar una notificación legítima con el
-      // cuerpo cambiado alcanzaría para voltear una reserva en curso.
-      //
-      // No se compara contra literales exactos porque no está garantizada la
-      // grafía que usa MercadoPago (canceled/cancelled). El prefijo alcanza
-      // para distinguir un final de fracaso de una orden todavía viva
-      // (created, action_required) o ya pagada (processed).
       const status = (order.status ?? '').toLowerCase();
       const failed = status.startsWith('cancel') || status.startsWith('expir');
 
@@ -232,7 +182,6 @@ export const paymentController = {
       return;
     }
 
-    // Sólo un pago acreditado habilita las entradas.
     if (order.status !== 'processed' || order.status_detail !== 'accredited') {
       console.log(
         `[webhook] orden ${dataId} sin acreditar (${order.status}/${order.status_detail})`,
@@ -249,7 +198,6 @@ export const paymentController = {
       return;
     }
 
-    // La base es la que sabe qué entradas cubre la orden.
     const tickets = await ticketService.findByOrderId(orderId);
 
     if (tickets.length === 0) {
@@ -258,8 +206,6 @@ export const paymentController = {
       return;
     }
 
-    // El external_reference llega en la notificación y podría no reflejar lo
-    // guardado: si no coincide con la base, no se confirma nada.
     const referenced = (order.external_reference ?? '')
       .split('-')
       .map(Number)
@@ -278,8 +224,6 @@ export const paymentController = {
       return;
     }
 
-    // confirmPayment sólo toca las PENDING: en un reintento no queda nada por
-    // confirmar y no se regeneran los códigos ya emitidos.
     const confirmed = await ticketService.confirmPayment(ticketIds, paymentId);
 
     console.log(

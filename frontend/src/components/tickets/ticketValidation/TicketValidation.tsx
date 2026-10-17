@@ -11,8 +11,6 @@ import type { OperatorTicket } from '../../../types/ticket'
 import { getTodayMatches, validateTicket } from './TicketValidation.server'
 import { CODE_LENGTH } from './TicketValidation.const'
 
-// Último resultado mostrado. Queda fijo hasta el próximo código (no es un
-// toast) porque el operador lo lee con la persona parada adelante.
 type ValidationResult =
   | { ok: true; ticket: OperatorTicket }
   | { ok: false; message: string }
@@ -20,8 +18,6 @@ type ValidationResult =
 export default function TicketValidation() {
   const [matches, setMatches] = useState<PublicMatch[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  // String y no number: es el value del <select>. Se convierte con Number()
-  // recién al enviar, porque el backend rechaza un matchId string con 400.
   const [matchId, setMatchId] = useState('')
   const [code, setCode] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -35,7 +31,6 @@ export default function TicketValidation() {
       onSuccess: (data) => {
         if (ignore) return
         setMatches(data)
-        // Con un solo partido en la jornada no hay nada que elegir.
         if (data.length === 1) setMatchId(String(data[0].id))
         setIsLoading(false)
       },
@@ -51,10 +46,6 @@ export default function TicketValidation() {
     }
   }, [])
 
-  // Da foco al input cada vez que queda habilitado: al elegir partido y al
-  // terminar cada validación. No se hace en los callbacks porque ahí el
-  // input sigue deshabilitado hasta el próximo render, y un input
-  // deshabilitado ignora focus().
   useEffect(() => {
     if (matchId && !isSubmitting) {
       codeInputRef.current?.focus()
@@ -63,7 +54,6 @@ export default function TicketValidation() {
 
   const handleMatchChange = (event: ChangeEvent<HTMLSelectElement>) => {
     setMatchId(event.target.value)
-    // Un resultado de otro partido no debe quedar en pantalla.
     setResult(null)
     setCode('')
   }
@@ -80,7 +70,6 @@ export default function TicketValidation() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    // El botón ya está deshabilitado en estos casos; esto cubre el Enter.
     if (!matchId || code.length !== CODE_LENGTH || isSubmitting) return
 
     setIsSubmitting(true)
@@ -88,8 +77,6 @@ export default function TicketValidation() {
     validateTicket(Number(matchId), code, {
       onSuccess: ({ ticket }) => finishValidation({ ok: true, ticket }),
       onError: (error) => {
-        // Con el token vencido el backend responde 401: sin esto el
-        // operador vería un error técnico y creería que la entrada es mala.
         const message =
           error instanceof ApiError && error.status === 401
             ? 'Tu sesión venció. Volvé a iniciar sesión para seguir validando.'

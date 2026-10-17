@@ -9,16 +9,11 @@ import { CATEGORY_LABEL } from '../../../types/match'
 import type { Court } from '../../../types/court'
 import type {AdminMatch, Category, ClubSummary, CreateMatchDto} from '../../../types/match'
 
-// Output properties: el formulario no guarda nada por su cuenta,
-// avisa hacia arriba y MatchAdmin decide qué hacer con el resultado.
 interface MatchFormProps {
   onAdd: (match: CreateMatchDto, onFinish: () => void) => void
   onEdit: (id: number, match: CreateMatchDto, onFinish: () => void) => void
 }
 
-// El backend manda ISO en UTC; los inputs trabajan en hora local.
-// Devuelve la fecha y la hora por separado, que es como las pide
-// el formulario.
 function toFormParts(iso: string): { date: string; time: string } {
   const utc = new Date(iso)
   const offset = utc.getTimezoneOffset() * 60000
@@ -45,8 +40,6 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
   const { state } = useLocation()
   const matchFromState = state as AdminMatch | null
 
-  // Todos los campos se guardan como string: es lo que devuelven los
-  // inputs del DOM. La conversión a number ocurre recién en el submit.
   const [form, setForm] = useState(
     matchFromState
       ? {
@@ -62,7 +55,6 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Opciones de los desplegables: se piden a la API al montar.
   const [clubs, setClubs] = useState<ClubSummary[]>([])
   const [courts, setCourts] = useState<Court[]>([])
 
@@ -77,8 +69,6 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
     })
   }, [])
 
-  // Fallback: si estamos editando y no llegó el state (F5 o link
-  // directo), pedimos el partido por su id.
   useEffect(() => {
     if (!isEditing || matchFromState || !id) return
 
@@ -99,7 +89,6 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
     })
   }, [id, isEditing, matchFromState, navigate])
 
-  // Handler genérico con clave computada: sirve para inputs y selects.
   const handleChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     attr: keyof typeof form,
@@ -112,9 +101,6 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
 
-    // Validaciones de forma. Las de negocio (conflicto de cancha,
-    // capacidad, entradas vendidas) las hace el backend y llegan
-    // por el onError de MatchAdmin.
     if (!form.date) return setError('La fecha es obligatoria')
     if (!form.time) return setError('La hora es obligatoria')
     if (!form.category) return setError('La categoría es obligatoria')
@@ -134,8 +120,6 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
     setIsSubmitting(true)
 
     const payload: CreateMatchDto = {
-      // Los dos campos se juntan en hora local y toISOString los pasa
-      // a UTC, que es lo que espera el backend.
       startsAt: new Date(`${form.date}T${form.time}`).toISOString(),
       price,
       category: form.category as Category,
@@ -144,10 +128,6 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
       courtId: Number(form.courtId),
     }
 
-    // No reseteamos isSubmitting acá: onAdd/onEdit son asincrónicos y
-    // el botón se liberaría antes de que el servidor responda. Si el
-    // guardado sale bien, MatchAdmin navega y este componente se
-    // desmonta; si falla, hay que volver a habilitar el botón.
     if (isEditing) {
       onEdit(Number(id), payload, () => setIsSubmitting(false))
     } else {
@@ -192,9 +172,6 @@ export default function MatchForm({ onAdd, onEdit }: MatchFormProps) {
             className={inputClass}
           >
             <option value="">Elegí un horario</option>
-            {/* Si el partido que se edita tiene una hora fuera de la
-                lista (cargada antes de este cambio), se agrega para no
-                perder el dato ni dejar el select vacío. */}
             {form.time && !TIME_OPTIONS.includes(form.time) && (
               <option value={form.time}>{form.time}</option>
             )}

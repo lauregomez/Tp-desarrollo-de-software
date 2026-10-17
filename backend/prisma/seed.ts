@@ -4,15 +4,11 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-// Precio de la entrada general, igual para todos los partidos del seed.
-// Las entradas guardan su propio pricePaid: usamos la misma constante
-// para que coincida con el precio del partido al que pertenecen.
 const TICKET_PRICE = '7000.00';
 
 const SALT_ROUNDS = 10;
 const DEFAULT_PASSWORD = process.env.SEED_PASSWORD ?? 'Password123!';
 
-/** Devuelve una fecha desplazada N días desde hoy, a una hora fija. */
 function inDays(days: number, hour: number, minute = 0): Date {
   const date = new Date();
   date.setDate(date.getDate() + days);
@@ -66,10 +62,6 @@ async function seedUsers() {
 }
 
 async function seedClubs() {
-  // Clubes reales de fútsal de Rosario, con escudo y año de fundación.
-  // Los escudos son URLs externas (rosariofutbol.com): si dejan de responder,
-  // el front muestra las iniciales del club como fallback.
-  // foundedYear en null: la fuente no informa el año de ese club.
   const LOGO_BASE = 'https://rosariofutbol.com/imagenes/archivos/deportesequipos';
 
   const clubs = [
@@ -115,8 +107,6 @@ async function seedClubs() {
       const data = { foundedYear, logoUrl: `${LOGO_BASE}/${logo}_imagen.png` };
       return prisma.club.upsert({
         where: { name },
-        // update también carga logo y año: así, correr el seed sobre una
-        // base existente completa los clubes que ya estaban.
         update: data,
         create: { name, ...data },
       });
@@ -166,8 +156,6 @@ async function seedCourts(clubs: { id: number; name: string }[]) {
   const created = await Promise.all(
     courts.map(({ club, ...court }) => {
       const clubId = clubIdByName.get(club);
-      // Un error de tipeo en el nombre corta el seed con un mensaje claro,
-      // en vez de fallar más adelante con un error de Prisma difícil de leer.
       if (clubId === undefined) {
         throw new Error(`Seed: no existe el club "${club}"`);
       }
@@ -188,13 +176,10 @@ async function seedMatches(
   courts: { id: number; name: string }[],
 ) {
   const clubIdByName = new Map(clubs.map((club) => [club.name, club.id]));
-  // En el schema el nombre de cancha es único solo por club, pero en este
-  // seed no se repite ninguno, así que alcanza con buscar por nombre.
   const courtIdByName = new Map(courts.map((court) => [court.name, court.id]));
 
   const idOf = (ids: Map<string, number>, name: string) => {
     const id = ids.get(name);
-    // Un error de tipeo corta el seed con un mensaje claro.
     if (id === undefined) {
       throw new Error(`Seed: no existe "${name}"`);
     }
@@ -214,12 +199,11 @@ async function seedMatches(
       status: MatchStatus.PUBLISHED,
     },
     {
-      // Ninguno de los dos es dueño de la cancha: la alquilan a Federal.
       id: 2,
       startsAt: inDays(7, 18, 0),
       price: TICKET_PRICE,
       category: Category.PRIMERA,
-      capacity: 200, // override: no se habilita toda la cancha
+      capacity: 200,
       home: 'Echesortu Fútbol Club',
       away: 'Club Social y Deportivo El Luchador',
       court: 'Federal',
@@ -234,10 +218,9 @@ async function seedMatches(
       home: 'Club de Regatas Rosario',
       away: 'Rosario Rowing Club',
       court: 'Regatas',
-      status: MatchStatus.DRAFT, // para probar optionalAuthenticate
+      status: MatchStatus.DRAFT,
     },
     {
-      // Central Córdoba es local en una cancha alquilada a Unión Central.
       id: 4,
       startsAt: inDays(-3, 20, 0),
       price: TICKET_PRICE,
@@ -268,19 +251,7 @@ async function seedMatches(
   return matches.map((match) => match.id);
 }
 
-/**
- * Entradas de ejemplo para el usuario común, una por estado.
- *
- * Permiten probar el listado, el detalle y la validación en cancha sin
- * tener que pasar por un pago real de MercadoPago cada vez que se
- * reinicia la base.
- */
 async function seedTickets(userId: number, matchIds: number[]) {
-  // No se usa upsert por id: cuando exista el flujo de compra, las entradas
-  // reales van a ocupar esos ids y el seed las sobrescribiría (incluido el
-  // dueño). Tampoco sirve upsert por code, porque la PENDING no tiene code.
-  // Así que sólo se siembran si el usuario todavía no tiene ninguna: correr
-  // el seed de nuevo no duplica ni pisa entradas existentes.
   const existing = await prisma.ticket.count({ where: { userId } });
   if (existing > 0) {
     console.log('✓ Entradas: el usuario ya tiene, no se crean');
@@ -290,19 +261,14 @@ async function seedTickets(userId: number, matchIds: number[]) {
   await prisma.ticket.createMany({
     data: [
       {
-        // Intento de compra sin pagar: no ocupa lugar ni tiene código.
         status: TicketStatus.PENDING,
-        code: null, // el código se genera recién al confirmarse el pago
+        code: null,
         pricePaid: TICKET_PRICE,
         mpPaymentId: null,
         userId,
         matchId: matchIds[0],
       },
       {
-        // Entrada pagada y lista para validar en cancha.
-        // Los códigos tienen el mismo formato que los reales (4 caracteres
-        // en mayúsculas) y no chocan con ellos: al confirmar un pago, el
-        // generador descarta los códigos que ya existen en el partido.
         status: TicketStatus.ACTIVE,
         code: 'DEMO',
         pricePaid: TICKET_PRICE,
@@ -311,7 +277,6 @@ async function seedTickets(userId: number, matchIds: number[]) {
         matchId: matchIds[0],
       },
       {
-        // Entrada ya usada, asociada al partido finalizado del seed.
         status: TicketStatus.USED,
         code: 'GOL1',
         pricePaid: TICKET_PRICE,
@@ -337,8 +302,6 @@ async function main() {
 
   const matchIds = await seedMatches(clubs, courts);
 
-  // Jaste recibe las entradas de ejemplo; Jager queda sin entradas para
-  // probar el estado vacío de "Mis entradas".
   const buyer = users.find((u) => u.email === 'jaste@arf.com');
   if (buyer) {
     await seedTickets(buyer.id, matchIds);

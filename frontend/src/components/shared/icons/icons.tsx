@@ -1,10 +1,3 @@
-// Iconos en SVG inline, sin librería externa: son pocos y el proyecto
-// ya resuelve así sus gráficos (EmptyState, CourtLines).
-//
-// Todos heredan el color del texto con currentColor y se dimensionan
-// con la clase que les pase quien los use. aria-hidden porque son
-// decorativos: el significado lo da el aria-label del botón.
-
 interface IconProps {
   className?: string
 }
@@ -75,9 +68,6 @@ export function TrashIcon({ className = 'h-4 w-4' }: IconProps) {
     </svg>
   )
 }
-
-// Iconos del clima. Usan fill="none" y trazo como los demás, pero el sol
-// lleva relleno para que se distinga de la luna a tamaño chico.
 
 export function SunIcon({ className = 'h-4 w-4' }: IconProps) {
   return (

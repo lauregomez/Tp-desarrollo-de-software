@@ -2,8 +2,6 @@ import { apiFetch } from '../../../lib/api'
 import type { Callbacks } from '../../../lib/api'
 import type { ClubSummary, CourtSummary, MatchFilterValues } from '../../../types/match'
 
-// Opciones para los desplegables. Los dos endpoints son públicos:
-// sin sesión, /courts responde sin la capacidad, que acá no hace falta.
 export const getClubOptions = ({ onSuccess, onError }: Callbacks<ClubSummary[]>) => {
   apiFetch<ClubSummary[]>('/clubs')
     .then(onSuccess)
@@ -16,9 +14,6 @@ export const getCourtOptions = ({ onSuccess, onError }: Callbacks<CourtSummary[]
     .catch(onError)
 }
 
-// Arma el query string de GET /api/matches salteando los filtros vacíos.
-// Las listas van como parámetro repetido (?clubId=3&clubId=7): Express
-// las recibe como array. La usan el listado, Gestión y la validación.
 export function buildMatchQuery(filters: MatchFilterValues): string {
   const params = new URLSearchParams()
 

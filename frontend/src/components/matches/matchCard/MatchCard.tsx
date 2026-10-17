@@ -23,8 +23,6 @@ export default function MatchCard({ match }: MatchCardProps) {
       </header>
 
       <div className="flex-1 p-4">
-        {/* items-start: los nombres largos ocupan más líneas y, centrando,
-            los escudos quedaban a distinta altura. */}
         <div className="flex items-start justify-center gap-4">
           <div className="flex flex-1 flex-col items-center gap-2 text-center">
             <ClubLogo name={homeClub.name} logoUrl={homeClub.logoUrl} />

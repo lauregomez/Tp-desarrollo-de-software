@@ -2,8 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import ConfirmModal from './ConfirmModal'
 
-// Sin los globals de Vitest, Testing Library no desmonta sola entre tests:
-// sin esto, el modal de un test seguiría en el DOM del siguiente.
 afterEach(cleanup)
 
 function renderModal(open = true) {
@@ -52,7 +50,6 @@ describe('ConfirmModal', () => {
     fireEvent.click(dialog)
     expect(onCancel).not.toHaveBeenCalled()
 
-    // El fondo no tiene rol propio: es el contenedor del dialog.
     fireEvent.click(dialog.parentElement!)
     expect(onCancel).toHaveBeenCalledOnce()
   })

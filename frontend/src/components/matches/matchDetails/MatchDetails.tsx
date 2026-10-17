@@ -15,24 +15,16 @@ export default function MatchDetails() {
   const { id } = useParams<{ id: string }>()
 
   const [match, setMatch] = useState<PublicMatch | null>(null)
-  // Si no hay id en la URL no hay nada que pedir, así que arrancamos
-  // sin loading. Inicializar el estado con el valor correcto evita el
-  // setState sincrónico dentro del efecto, que dispara un render de más.
   const [isLoading, setIsLoading] = useState(Boolean(id))
 
   useEffect(() => {
     if (!id) return
 
-    // useParams siempre devuelve string: el servicio espera number,
-    // así que convertimos acá. Un id no numérico (/partidos/abc) da NaN
-    // y el backend responde 400, que cae en el onError.
     getMatchById(Number(id), {
       onSuccess: (data) => {
         setMatch(data)
         setIsLoading(false)
       },
-      // No mostramos toast: el bloque de "no encontrado" de abajo
-      // ya le explica al usuario qué pasó, sin duplicar el aviso.
       onError: () => setIsLoading(false),
     })
   }, [id])
@@ -41,8 +33,6 @@ export default function MatchDetails() {
     return <p className="text-muted">Cargando partido…</p>
   }
 
-  // Segundo estado: el id no existe o falló la conexión.
-  // Sin este bloque, el JSX de abajo rompería al leer match.homeClub de null.
   if (!match) {
     return (
       <div className="flex flex-col items-start gap-4">
@@ -57,8 +47,6 @@ export default function MatchDetails() {
   }
 
   return (
-    // En celular el clima queda debajo; desde md, a la derecha.
-    // items-start: el recuadro del clima no se estira a la altura de la tarjeta.
     <div className="flex flex-col gap-6 md:flex-row md:items-start">
       <article className="w-full max-w-xl rounded-xl border border-slate-200 bg-white p-6 md:flex-1">
         <header className="flex items-center justify-between text-sm text-muted">
@@ -66,8 +54,6 @@ export default function MatchDetails() {
           <span>{formatShortDate(match.startsAt)}</span>
         </header>
 
-        {/* items-start: si un nombre ocupa dos líneas, los escudos
-            quedan igual a la misma altura. */}
         <div className="mt-6 flex items-start justify-center gap-6">
           <div className="flex flex-1 flex-col items-center gap-2 text-center">
             <ClubLogo
@@ -106,8 +92,6 @@ export default function MatchDetails() {
           </div>
         </dl>
 
-        {/* flex-wrap: en celular el selector y el botón bajan a otra línea
-            en vez de desbordar la tarjeta. */}
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <Button variant="secondary" onClick={() => navigate('/')}>
             Volver
@@ -116,8 +100,6 @@ export default function MatchDetails() {
         </div>
       </article>
 
-      {/* El ancho lo decide el padre: en celular, el mismo que la tarjeta;
-          desde md, fijo y sin achicarse. */}
       <div className="w-full max-w-xl md:w-72 md:shrink-0">
         <MatchWeather matchId={match.id} />
       </div>

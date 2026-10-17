@@ -6,7 +6,6 @@ import { authorize } from '../../middlewares/authorize';
 
 const router = Router();
 
-// El historial es solo para el admin.
 router.get('/', authenticate, authorize('ADMIN'), asyncHandler(matchLogController.getAll));
 
 export default router;

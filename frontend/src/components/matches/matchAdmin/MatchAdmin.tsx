@@ -17,12 +17,10 @@ import type { AdminMatch, CreateMatchDto, MatchStatus, MatchFilterValues } from 
 export default function MatchAdmin() {
   const [matches, setMatches] = useState<AdminMatch[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  // Arranca en "Publicado": es lo que el admin gestiona el día a día.
   const [filters, setFilters] = useState<MatchFilterValues>({ statuses: ['PUBLISHED'] })
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Descarta respuestas viejas si el filtro cambia antes de que lleguen.
     let ignore = false
     setIsLoading(true)
 
@@ -53,7 +51,6 @@ export default function MatchAdmin() {
       },
       onError: (error) => {
         errorToast(error.message)
-        // El formulario sigue montado: liberamos el botón para reintentar.
         onFinish()
       },
     })
@@ -81,8 +78,6 @@ export default function MatchAdmin() {
         setMatches((prev) => prev.filter((m) => m.id !== deletedId))
         successToast('¡Partido eliminado correctamente!')
       },
-      // El backend sólo deja borrar partidos en DRAFT y sin entradas:
-      // si no, responde 409 con el motivo.
       onError: (error) => errorToast(error.message),
     })
   }
@@ -95,13 +90,10 @@ export default function MatchAdmin() {
         )
         successToast('¡Estado actualizado correctamente!')
       },
-      // El backend rechaza con 409 las transiciones no permitidas.
       onError: (error) => errorToast(error.message),
     })
   }
 
-  // Navegamos llevando el partido en el state para que el formulario
-  // se precargue sin pedirlo de nuevo al servidor.
   const handleEdit = (match: AdminMatch) => {
     navigate(`/admin/partidos/editar/${match.id}`, { state: match })
   }
@@ -118,8 +110,6 @@ export default function MatchAdmin() {
 
   return (
     <div>
-      {/* El header está FUERA del <Routes>: se ve en las tres
-          sub-rutas y actúa como layout de la sección. */}
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-navy md:text-3xl">Partidos</h1>
         <Button
@@ -140,8 +130,6 @@ export default function MatchAdmin() {
               {isLoading && matches.length === 0 ? (
                 <p className="text-muted">Cargando partidos…</p>
               ) : rows.length > 0 ? (
-                // overflow-x-auto: en mobile la tabla scrollea sola
-                // en vez de romper el ancho de la página.
                 <div
                   className={`overflow-x-auto rounded-xl border border-slate-200 bg-white transition-opacity ${
                     isLoading ? 'opacity-50' : ''
@@ -172,8 +160,6 @@ export default function MatchAdmin() {
           }
         />
 
-        {/* "nuevo" y "editar/:id" renderizan el MISMO componente:
-            el formulario decide solo en qué modo está. */}
         <Route
           path="nuevo"
           element={<MatchForm onAdd={handleAdd} onEdit={handleUpdate} />}

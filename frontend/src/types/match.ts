@@ -7,10 +7,6 @@ export interface ClubSummary {
   name: string
 }
 
-// El club tal como viene dentro de un partido: matchInclude del backend
-// también trae el escudo. Va aparte de ClubSummary porque TicketMatch usa
-// ClubSummary y las entradas no traen logoUrl.
-// null: el escudo es opcional al crear un club.
 export interface MatchClub extends ClubSummary {
   logoUrl: string | null
 }
@@ -20,9 +16,6 @@ export interface CourtSummary {
   name: string
 }
 
-// La cancha tal como viene dentro de un partido: matchInclude del backend
-// también trae la dirección. Va aparte de CourtSummary porque los filtros
-// usan CourtSummary y ahí la dirección no hace falta.
 export interface MatchCourt extends CourtSummary {
   address: string
 }
@@ -46,9 +39,6 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   QUINTA: 'Quinta',
 }
 
-// Proyección que devuelve el backend cuando quien pregunta es ADMIN.
-// A diferencia de PublicMatch expone la capacidad real y las entradas
-// vendidas, y no trae soldOut (el admin ve los números, no el booleano).
 export interface AdminMatch {
   id: number
   startsAt: string
@@ -66,11 +56,6 @@ export interface AdminMatch {
   available: number
 }
 
-// Cuerpo del POST /api/matches.
-// price va como number aunque el backend lo devuelva como string:
-// Prisma serializa el Decimal a string al responder, pero valida
-// typeof price === 'number' al recibir.
-// capacity es opcional: si no se manda, el partido usa la de la cancha.
 export interface CreateMatchDto {
   startsAt: string
   price: number
@@ -81,11 +66,8 @@ export interface CreateMatchDto {
   capacity?: number | null
 }
 
-// El PUT acepta cambios parciales: sólo se mandan los campos tocados.
 export type UpdateMatchDto = Partial<CreateMatchDto>
 
-// Etiquetas en español para mostrar el estado, igual que CATEGORY_LABEL.
-// Sin esto la tabla muestra el enum crudo del backend (DRAFT, PUBLISHED).
 export const STATUS_LABEL: Record<MatchStatus, string> = {
   DRAFT: 'Borrador',
   PUBLISHED: 'Publicado',
@@ -93,9 +75,6 @@ export const STATUS_LABEL: Record<MatchStatus, string> = {
   CANCELLED: 'Cancelado',
 }
 
-// Espejo de ALLOWED_TRANSITIONS del backend (match.controller.ts).
-// Se duplica acá para no ofrecer acciones que el servidor va a rechazar:
-// la regla sigue viviendo en el backend, esto sólo evita el 409.
 export const ALLOWED_TRANSITIONS: Record<MatchStatus, MatchStatus[]> = {
   DRAFT: ['PUBLISHED', 'CANCELLED'],
   PUBLISHED: ['FINISHED', 'CANCELLED'],
@@ -103,7 +82,6 @@ export const ALLOWED_TRANSITIONS: Record<MatchStatus, MatchStatus[]> = {
   CANCELLED: [],
 }
 
-// Texto del botón que dispara cada transición.
 export const TRANSITION_LABEL: Record<MatchStatus, string> = {
   DRAFT: 'Volver a borrador',
   PUBLISHED: 'Publicar',
@@ -111,19 +89,12 @@ export const TRANSITION_LABEL: Record<MatchStatus, string> = {
   CANCELLED: 'Cancelar',
 }
 
-// Filtros de GET /api/matches. Todos opcionales y acumulables: el que
-// queda undefined no se manda y el backend no filtra por él.
-// Los que son listas admiten varias opciones a la vez: dentro de una
-// lista es un "o", y entre filtros distintos es un "y".
 export interface MatchFilterValues {
   statuses?: MatchStatus[]
   category?: Category
   clubIds?: number[]
   courtIds?: number[]
   q?: string
-  // Instantes ISO completos (con hora y zona), no fechas sueltas: el
-  // backend interpreta "2026-09-27" como medianoche UTC, que en Argentina
-  // son las 21 del día anterior.
   from?: string
   to?: string
 }
