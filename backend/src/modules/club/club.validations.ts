@@ -1,8 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
 
-// Middleware de sanitización: arma un objeto sólo con los campos permitidos
-// y descarta los undefined. Evita que lleguen campos no previstos al service.
-// Los null sí se conservan: son la forma de borrar un campo opcional.
 export const sanitizeClubInput = (
   req: Request,
   res: Response,

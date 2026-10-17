@@ -24,8 +24,6 @@ export const clubService = {
     });
   },
 
-  // Borrado real, como sugirió el profe: los partidos finalizados y suspendidos
-  // quedan con la foránea en null y su historial se conserva en match_logs.
   async remove(id: number): Promise<RemoveClubResult> {
     return prisma.$transaction(async (tx) => {
       const club = await tx.club.findUnique({ where: { id }, select: { id: true } });
@@ -34,8 +32,6 @@ export const clubService = {
       const courts = await tx.court.findMany({ where: { clubId: id }, select: { id: true } });
       const courtIds = courts.map((court) => court.id);
 
-      // Partidos del club: los que juega de local o visitante, y los que se
-      // juegan en alguna de sus canchas (aunque sean de otros clubes).
       const clubMatches = {
         OR: [{ homeClubId: id }, { awayClubId: id }, { courtId: { in: courtIds } }],
       };
@@ -45,7 +41,6 @@ export const clubService = {
       });
       if (published > 0) return 'HAS_PUBLISHED_MATCHES';
 
-      // Orden: borradores, después canchas y al final el club.
       await tx.match.deleteMany({ where: { ...clubMatches, status: MatchStatus.DRAFT } });
       await tx.court.deleteMany({ where: { clubId: id } });
       await tx.club.delete({ where: { id } });

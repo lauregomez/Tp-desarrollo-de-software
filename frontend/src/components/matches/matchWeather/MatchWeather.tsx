@@ -2,15 +2,12 @@ import { useEffect, useState } from 'react'
 import { weatherIconFor } from './MatchWeather.const'
 
 import { getMatchWeather } from './MatchWeather.server'
-// Alias porque el componente se llama igual que el tipo.
 import type { MatchWeather as Weather } from '../../../types/weather'
 
 interface MatchWeatherProps {
   matchId: number
 }
 
-// Contenido del recuadro una vez que terminó la carga. null es un error de
-// red o un 404: para el usuario es lo mismo que UNAVAILABLE.
 function renderWeather(weather: Weather | null) {
   if (weather?.status === 'AVAILABLE') {
     const { forecast } = weather
@@ -19,8 +16,6 @@ function renderWeather(weather: Weather | null) {
     return (
       <>
         <div className="flex items-center gap-3">
-          {/* aria-hidden: la descripción de abajo ya dice qué clima es,
-              así que el icono no agrega nada para un lector de pantalla. */}
           <Icon className="h-10 w-10 text-primary" />
           <p className="text-4xl font-bold text-navy">
             {forecast.temperature} °C
@@ -58,8 +53,6 @@ export default function MatchWeather({ matchId }: MatchWeatherProps) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Si la respuesta llega cuando el efecto ya se limpió (cambió matchId o
-    // se desmontó el componente), se descarta para no pisar el estado.
     let ignore = false
 
     getMatchWeather(matchId, {
@@ -68,8 +61,6 @@ export default function MatchWeather({ matchId }: MatchWeatherProps) {
         setWeather(data)
         setIsLoading(false)
       },
-      // Sin toast: el clima es un dato accesorio y el recuadro ya muestra
-      // "Clima no disponible".
       onError: () => {
         if (!ignore) setIsLoading(false)
       },

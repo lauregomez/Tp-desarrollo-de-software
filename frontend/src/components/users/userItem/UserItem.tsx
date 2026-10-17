@@ -4,12 +4,8 @@ import ConfirmModal from '../../confirmModal/ConfirmModal'
 import { ROLE_LABEL } from '../../../types/user'
 import type { User } from '../../../types/user'
 
-// Input properties: el usuario entra por props, UserItem no lo pide
-// al servidor. Output properties: los callbacks avisan qué quiso hacer
-// el usuario y UserList decide qué significa.
 interface UserItemProps {
   user: User
-  // Id del admin logueado, para distinguir su propia fila.
   currentUserId: number
   onEdit: (user: User) => void
   onDeactivate: (id: number) => void
@@ -23,13 +19,8 @@ export default function UserItem({
   onDeactivate,
   onActivate,
 }: UserItemProps) {
-  // Estado local: el modal es efímero y vive acá para que cada fila
-  // tenga el suyo, igual que en ClubItem.
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  // Un admin no puede darse de baja a sí mismo: quedaría sin sesión y,
-  // si fuera el último, el sistema sin nadie que administre. El backend
-  // lo valida igual; esconder el botón es sólo comodidad.
   const isSelf = user.id === currentUserId
 
   const handleConfirmDeactivate = () => {
@@ -38,9 +29,6 @@ export default function UserItem({
   }
 
   return (
-    // La fila de un usuario inactivo se atenúa para distinguirla de un
-    // vistazo, sin sacarla de la lista: el admin tiene que poder
-    // reactivarla.
     <tr className={`border-t border-slate-200 ${user.isActive ? '' : 'opacity-60'}`}>
       <td className="px-3 py-2">
         {user.lastName}, {user.name}
@@ -57,7 +45,6 @@ export default function UserItem({
 
           {!isSelf &&
             (user.isActive ? (
-              // Este botón NO da de baja: abre el modal.
               <Button
                 variant="warning"
                 size="sm"
@@ -66,8 +53,6 @@ export default function UserItem({
                 Desactivar
               </Button>
             ) : (
-              // Reactivar no pide confirmación: es reversible y no
-              // destruye nada.
               <Button
                 variant="success"
                 size="sm"

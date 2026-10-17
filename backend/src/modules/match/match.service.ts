@@ -11,14 +11,9 @@ import { SOLD_STATUSES } from '../ticket/ticket.types';
 import { weatherService } from '../weather/weather.service';
 import { MatchWeather } from '../weather/weather.types';
 
-
-
-// Argentina es UTC-3 todo el año (no tiene horario de verano desde 2009).
 const ARGENTINA_OFFSET_MS = 3 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Las fechas se guardan en UTC: un partido a las 22 hs de Rosario ya es el
-// día siguiente en UTC. Por eso "el mismo día" se calcula en hora argentina.
 function argentinaDayRange(date: Date) {
   const local = new Date(date.getTime() - ARGENTINA_OFFSET_MS);
   const start = new Date(
@@ -35,13 +30,11 @@ const CATEGORY_LABEL: Record<Category, string> = {
   QUINTA: 'Quinta',
 };
 
-// Solo estos estados generan un registro en el historial.
 const LOGGED_STATUS_LABEL: Partial<Record<MatchStatus, string>> = {
   FINISHED: 'Finalizado',
   CANCELLED: 'Suspendido',
 };
 
-// Lo mínimo que hace falta para describir un partido.
 type LoggableMatch = {
   status: MatchStatus;
   startsAt: Date;
@@ -51,9 +44,6 @@ type LoggableMatch = {
   court: { name: string } | null;
 };
 
-// Arma el texto del historial con los nombres de ese momento. Se guarda así,
-// ya armado, para que el registro no se pierda si después se borra un club.
-// Nunca incluye resultado: el sistema no maneja goles.
 function describeMatch(match: LoggableMatch): string {
   const date = new Intl.DateTimeFormat('es-AR', {
     day: '2-digit',
@@ -87,9 +77,6 @@ function matchInclude() {
 
 export const matchService = {
   async findAll(filters: MatchFilters = {}) {
-    // Club y búsqueda necesitan un OR cada uno. Si los dos fueran claves OR
-    // del mismo objeto, la segunda pisaría a la primera: dentro de un AND
-    // se combinan sin problema.
     const conditions: Prisma.MatchWhereInput[] = [];
 
     if (filters.clubIds?.length) {
@@ -151,8 +138,6 @@ export const matchService = {
     });
   },
 
-  // Cambia el estado y, si es finalizado o suspendido, registra el partido en
-  // el historial. Van en una transacción: o se hacen las dos cosas o ninguna.
   async changeStatus(id: number, status: MatchStatus, userId: number) {
     return prisma.$transaction(async (tx) => {
       const match = await tx.match.update({
@@ -226,8 +211,6 @@ export const matchService = {
     });
   },
 
-  // Un partido suspendido, finalizado o que ya terminó no necesita pronóstico:
-  // se corta acá, antes de llamar a Open-Meteo.
   async getWeather(match: Pick<Match, 'status' | 'startsAt'>): Promise<MatchWeather> {
     if (
       match.status === MatchStatus.CANCELLED ||
@@ -245,8 +228,6 @@ export const matchService = {
 type MatchWithRelations = NonNullable<Awaited<ReturnType<typeof matchService.findById>>>;
 
 export function resolveCapacity(match: MatchWithRelations): number {
-  // Sin cancha solo quedan partidos cuya cancha se borró, que ya están
-  // finalizados o suspendidos y no venden entradas: capacidad 0.
   return match.capacity ?? match.court?.capacity ?? 0;
 }
 

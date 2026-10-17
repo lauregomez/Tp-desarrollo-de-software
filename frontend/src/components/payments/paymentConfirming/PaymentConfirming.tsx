@@ -6,14 +6,10 @@ import { PENDING_PURCHASE_KEY } from '../../tickets/buyTickets/BuyTickets.const'
 import { getTicket } from './PaymentConfirming.server'
 
 const POLL_INTERVAL_MS = 2000
-// 30 intentos cada 2 segundos: aproximadamente un minuto de espera.
 const MAX_ATTEMPTS = 30
 
 type Status = 'waiting' | 'failed' | 'timeout'
 
-// Lee los ids que guardó BuyTickets antes de ir a MercadoPago.
-// sessionStorage es texto: se valida la forma antes de usarlo, porque
-// puede estar vacío o haber sido modificado a mano.
 function readPendingPurchase(): number[] | null {
   try {
     const raw = sessionStorage.getItem(PENDING_PURCHASE_KEY)
@@ -33,15 +29,12 @@ const LINK_CLASS =
 
 export default function PaymentConfirming() {
   const navigate = useNavigate()
-  // Inicializador lazy: se lee una sola vez al montar, sin useEffect.
   const [ticketIds] = useState(readPendingPurchase)
   const [status, setStatus] = useState<Status>('waiting')
 
   useEffect(() => {
     if (!ticketIds) return
 
-    // Mismo mecanismo que MyTicketList: si el componente se desmonta,
-    // las respuestas que lleguen después se ignoran.
     let ignore = false
     let attempts = 0
     let timeoutId: ReturnType<typeof setTimeout> | undefined
@@ -55,8 +48,6 @@ export default function PaymentConfirming() {
       timeoutId = setTimeout(check, POLL_INTERVAL_MS)
     }
 
-    // Alcanza con consultar la primera entrada: el backend confirma todas
-    // las de la orden en la misma transacción.
     const check = () => {
       attempts++
       getTicket(ticketIds[0], {
@@ -64,8 +55,6 @@ export default function PaymentConfirming() {
           if (ignore) return
           if (ticket.status === 'ACTIVE') {
             sessionStorage.removeItem(PENDING_PURCHASE_KEY)
-            // replace: si el usuario vuelve atrás, no cae de nuevo en esta
-            // pantalla a esperar un pago que ya se confirmó.
             if (ticketIds.length === 1) {
               navigate(`/mis-entradas/${ticket.id}`, { replace: true, state: ticket })
             } else {
@@ -73,17 +62,16 @@ export default function PaymentConfirming() {
             }
             return
           }
-          scheduleNext() // sigue PENDING: el webhook todavía no llegó
+          scheduleNext()
         },
         onError: (error) => {
           if (ignore) return
-          // 404: el pago se rechazó y el backend borró las entradas.
           if (error instanceof ApiError && error.status === 404) {
             sessionStorage.removeItem(PENDING_PURCHASE_KEY)
             setStatus('failed')
             return
           }
-          scheduleNext() // error de red: puede ser pasajero, se reintenta
+          scheduleNext()
         },
       })
     }

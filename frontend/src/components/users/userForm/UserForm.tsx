@@ -8,9 +8,6 @@ import { getUser } from './UserForm.server'
 import { ROLE_LABEL } from '../../../types/user'
 import type { User, CreateUserDto, RoleName } from '../../../types/user'
 
-// Output properties: el formulario no guarda nada por su cuenta,
-// avisa hacia arriba y UserList decide qué hacer con el resultado.
-// onFinish libera el botón si el guardado falla.
 interface UserFormProps {
   onAdd: (user: CreateUserDto, onFinish: () => void) => void
   onEdit: (id: number, user: CreateUserDto, onFinish: () => void) => void
@@ -21,7 +18,6 @@ const EMPTY_FORM = {
   lastName: '',
   email: '',
   password: '',
-  // Vacío mientras no se elige nada: el select arranca sin selección.
   role: '' as RoleName | '',
 }
 
@@ -34,9 +30,6 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
   const { state } = useLocation()
   const userFromState = state as User | null
 
-  // Todos los campos como string: es lo que devuelven los inputs.
-  // El rol viaja anidado en la respuesta de la API, así que se extrae
-  // el nombre para el select.
   const [form, setForm] = useState(
     userFromState
       ? {
@@ -51,8 +44,6 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Fallback: si estamos editando y no llegó el state (F5 o link
-  // directo), pedimos el usuario por su id.
   useEffect(() => {
     if (!isEditing || userFromState || !id) return
 
@@ -84,8 +75,6 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
 
-    // Validaciones de forma. El email duplicado (409) lo detecta
-    // el backend y llega por el onError de UserList.
     if (!isValidName(form.name)) {
       return setError('Ingresá un nombre válido, sin números')
     }
@@ -95,8 +84,6 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
     if (!form.email.includes('@')) return setError('El email no es válido')
     if (!form.role) return setError('El rol es obligatorio')
 
-    // La contraseña sólo se valida en el alta: el update del backend
-    // no la contempla, así que al editar el campo ni se muestra.
     if (!isEditing && form.password.length < 8) {
       return setError('La contraseña debe tener al menos 8 caracteres')
     }
@@ -108,11 +95,9 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
       lastName: form.lastName.trim(),
       email: form.email.trim().toLowerCase(),
       password: form.password,
-      // El contrato de la API habla de nombres de rol, no de ids.
       role: form.role,
     }
 
-    // No reseteamos isSubmitting acá: onAdd/onEdit son asincrónicos.
     if (isEditing) {
       onEdit(Number(id), payload, () => setIsSubmitting(false))
     } else {
@@ -123,8 +108,6 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
   const inputClass = 'rounded-lg border border-slate-300 px-3 py-2'
 
   return (
-    // noValidate desactiva la validación nativa del navegador, para que
-    // los mensajes de error sean los nuestros y no los del browser.
     <form
       onSubmit={handleSubmit}
       noValidate
@@ -177,9 +160,6 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
           />
         </div>
 
-        {/* El campo sólo existe en el alta. Al editar no se muestra
-            porque el backend no acepta cambios de contraseña: cada
-            usuario cambia la suya, un admin no pisa la de otro. */}
         {!isEditing && (
           <div className="flex flex-col gap-1">
             <label htmlFor="password" className="text-sm font-medium">
@@ -207,8 +187,6 @@ export default function UserForm({ onAdd, onEdit }: UserFormProps) {
             className={inputClass}
           >
             <option value="">Elegí un rol</option>
-            {/* El value es el nombre del rol, que es lo que viaja a la
-                API; la etiqueta en español es sólo para mostrar. */}
             {Object.entries(ROLE_LABEL).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}

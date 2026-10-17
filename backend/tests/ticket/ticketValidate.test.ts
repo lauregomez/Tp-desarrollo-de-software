@@ -8,12 +8,9 @@ import { prisma } from '../../src/config/prisma';
 const PASSWORD = 'Password123!';
 const CODE = 'AB12';
 
-// Ids del escenario que arma cada test en el beforeEach.
 let matchId: number;
 let ticketId: number;
 
-// Pide el token al endpoint de login real: así el test recorre la misma
-// cadena que el front (login → authenticate → authorize).
 async function loginAs(email: string): Promise<string> {
   const res = await request(app).post('/api/auth/login').send({ email, password: PASSWORD });
   expect(res.status).toBe(200);
@@ -33,7 +30,6 @@ async function ticketStatus(): Promise<TicketStatus> {
 }
 
 beforeEach(async () => {
-  // Limpieza en orden inverso a las claves foráneas.
   await prisma.ticket.deleteMany();
   await prisma.match.deleteMany();
   await prisma.court.deleteMany();
@@ -57,9 +53,6 @@ beforeEach(async () => {
   });
   const match = await prisma.match.create({
     data: {
-      // La validación no mira el horario, sólo que el partido esté publicado.
-      // new Date() representa el caso real: el partido se está jugando y el
-      // operador valida en la puerta.
       startsAt: new Date(),
       price: '2500.00',
       category: Category.PRIMERA,
@@ -69,8 +62,6 @@ beforeEach(async () => {
       status: MatchStatus.PUBLISHED,
     },
   });
-  // Se crea ya ACTIVE y con código: es el estado en que la deja el webhook
-  // de MercadoPago, que este test no recorre.
   const ticket = await prisma.ticket.create({
     data: { status: TicketStatus.ACTIVE, code: CODE, pricePaid: '2500.00', userId: buyer.id, matchId: match.id },
   });
@@ -80,7 +71,6 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  // Cierra la conexión para que Vitest termine limpio.
   await prisma.$disconnect();
 });
 
@@ -108,7 +98,6 @@ describe('POST /api/tickets/validate', () => {
     const res = await validate(await loginAs('user@arf.com'));
 
     expect(res.status).toBe(403);
-    // authorize corta antes del controller: la entrada no se toca.
     expect(await ticketStatus()).toBe(TicketStatus.ACTIVE);
   });
 });

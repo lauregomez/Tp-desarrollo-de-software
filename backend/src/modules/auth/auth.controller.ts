@@ -18,8 +18,6 @@ export const authController = {
 
     if (!result.ok) {
       if (result.reason === 'INACTIVE') {
-        // 403 y no 401: las credenciales son correctas, lo que falta
-        // es permiso para ingresar.
         res.status(403).json({
           message: 'Tu cuenta está desactivada. Contactá a un administrador.',
         });

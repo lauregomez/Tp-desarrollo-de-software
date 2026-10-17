@@ -52,7 +52,6 @@ export const userService = {
         name: dto.name,
         lastName: dto.lastName,
         email: dto.email,
-        // Sólo se toca el rol si vino en el DTO: el update es parcial.
         ...(dto.role !== undefined && {
           role: { connect: { name: dto.role } },
         }),
@@ -68,12 +67,6 @@ export const userService = {
     });
   },
 
-   /**
-   * Devuelve el nombre del rol de un usuario, o null si no existe.
-   * Se usa para saber si la operación afecta a un ADMIN antes de
-   * ejecutarla.
-   */
-  
   async findRoleName(id: number): Promise<string | null> {
     const user = await prisma.user.findUnique({
       where: { id },

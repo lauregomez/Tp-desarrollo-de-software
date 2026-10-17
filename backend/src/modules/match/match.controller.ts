@@ -12,13 +12,10 @@ function isAdmin(req: AuthRequest): boolean {
   return req.user?.role === 'ADMIN';
 }
 
-// Un partido es visible si es público (PUBLISHED) o si quien pide es admin.
 function canView(req: AuthRequest, match: { status: MatchStatus }): boolean {
   return isAdmin(req) || match.status === MatchStatus.PUBLISHED;
 }
 
-// Busca el partido del :id aplicando la regla de visibilidad. Si no se puede
-// mostrar, responde 400/404 y devuelve null para que el handler corte.
 async function findVisibleMatch(req: AuthRequest, res: Response) {
   const id = Number(req.params.id);
 
@@ -37,14 +34,11 @@ async function findVisibleMatch(req: AuthRequest, res: Response) {
   return match;
 }
 
-// Un filtro puede venir una vez (?clubId=3) o repetido (?clubId=3&clubId=7):
-// Express lo entrega como string o como array. Acá lo normalizamos a lista.
 function toList(value: unknown): string[] {
   const values = Array.isArray(value) ? value : [value];
   return values.filter((v): v is string => typeof v === 'string' && v !== '');
 }
 
-// Lista de ids positivos. Devuelve null si alguno no es válido.
 function parseIds(value: unknown): number[] | null {
   const ids = toList(value).map(Number);
   return ids.every((id) => Number.isInteger(id) && id > 0) ? ids : null;
@@ -55,7 +49,6 @@ export const matchController = {
     const admin = isAdmin(req);
     const { status, category, clubId, courtId, q, from, to } = req.query;
 
-    // Al público siempre se le muestran solo los publicados, pida lo que pida.
     let statusFilter: MatchStatus[] = [MatchStatus.PUBLISHED];
     if (admin) {
       statusFilter = toList(status) as MatchStatus[];
@@ -86,7 +79,6 @@ export const matchController = {
       categoryFilter = category as Category;
     }
 
-    // Texto libre: se ignora si viene vacío o con solo espacios.
     const search = typeof q === 'string' && q.trim() !== '' ? q.trim() : undefined;
 
     let fromFilter: Date | undefined;
@@ -112,8 +104,6 @@ export const matchController = {
       return;
     }
 
-    // Al público solo se le muestran partidos que se pueden comprar, pida lo que
-    // pida: se sigue vendiendo durante el partido para los que llegan tarde.
     if (!admin) {
       const cutoff = endedMatchCutoff();
       if (!fromFilter || fromFilter < cutoff) fromFilter = cutoff;
@@ -355,7 +345,6 @@ export const matchController = {
       }
     }
 
-    // Solo se revisa si cambió algo que afecte la regla: fecha, categoría o clubes.
     if (
       date !== undefined ||
       category !== undefined ||
@@ -430,7 +419,6 @@ export const matchController = {
       return;
     }
 
-    // La ruta usa authenticate + authorize('ADMIN'): el usuario siempre está.
     const { user } = req as AuthRequest;
     const updated = await matchService.changeStatus(id, status as MatchStatus, user!.userId);
     res.json(toAdminMatch(updated));

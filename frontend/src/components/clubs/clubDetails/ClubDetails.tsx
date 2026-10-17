@@ -12,13 +12,10 @@ export default function ClubDetails() {
   const { state } = useLocation()
   const clubFromState = state as Club | null
 
-  // Si venimos con el club en el state, arrancamos con el dato puesto
-  // y sin loading: no hay request ni parpadeo de carga.
   const [club, setClub] = useState<Club | null>(clubFromState ?? null)
   const [isLoading, setIsLoading] = useState(!clubFromState)
 
   useEffect(() => {
-    // Ya tenemos el club (o no hay id que pedir): no hace falta la request.
     if (clubFromState || !id) return
 
     getClub(id, {
@@ -26,8 +23,6 @@ export default function ClubDetails() {
         setClub(data)
         setIsLoading(false)
       },
-      // No mostramos toast acá: el bloque de "no encontrado" de abajo
-      // ya le explica al usuario qué pasó, sin duplicar el aviso.
       onError: () => setIsLoading(false),
     })
   }, [id, clubFromState])
@@ -36,8 +31,6 @@ export default function ClubDetails() {
     return <p className="text-muted">Cargando club…</p>
   }
 
-  // Segundo estado: el id no existe o falló la conexión.
-  // Sin este bloque, el JSX de abajo rompería al leer club.name de null.
   if (!club) {
     return (
       <div className="flex flex-col items-start gap-4">
@@ -66,8 +59,6 @@ export default function ClubDetails() {
         </div>
       </div>
 
-      {/* whitespace-pre-line respeta los saltos de línea que el usuario
-          escribió en el textarea: HTML por defecto los colapsa. */}
       {club.description && (
         <p className="mt-6 whitespace-pre-line text-sm text-slate-700">
           {club.description}
@@ -78,8 +69,6 @@ export default function ClubDetails() {
         <Button variant="secondary" onClick={() => navigate('/clubes')}>
           Volver
         </Button>
-        {/* Mandamos el club en el state para que el formulario
-            se precargue sin pedirlo de nuevo. */}
         <Button
           variant="primary"
           onClick={() =>

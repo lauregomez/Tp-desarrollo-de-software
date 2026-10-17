@@ -14,16 +14,9 @@ import EmptyState from '../../shared/emptyState/EmptyState'
 export default function MyTicketList() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  // '' representa "todas": es el valor de la opción por defecto del select.
   const [statusFilter, setStatusFilter] = useState<TicketDisplayStatus | ''>('')
 
-  // Corre al montar y cada vez que cambia el filtro: el backend ya acepta
-  // ?status=, así que cada cambio vuelve a pedir la lista filtrada.
   useEffect(() => {
-    // Si el filtro cambia antes de que llegue la respuesta, React ejecuta el
-    // cleanup de abajo y marca esta request como vieja. Sin esto, una
-    // respuesta lenta podría llegar después de la nueva y pisarla, dejando
-    // una lista que no corresponde al filtro elegido.
     let ignore = false
     setIsLoading(true)
 
@@ -45,13 +38,10 @@ export default function MyTicketList() {
     }
   }, [statusFilter])
 
-  // Usamos el id del backend como key, nunca el índice del array.
   const ticketsMapped = tickets.map((ticket) => (
     <MyTicketItem key={ticket.id} ticket={ticket} />
   ))
 
-  // Sin filtro, el usuario no tiene ninguna entrada: lo útil es ir a comprar.
-  // Con filtro, tiene entradas pero ninguna en ese estado: lo útil es sacarlo.
   const emptyView =
     statusFilter === '' ? (
       <EmptyState
@@ -78,8 +68,6 @@ export default function MyTicketList() {
       />
     )
 
-  // El filtro es parte del listado y no del header: si estuviera en el
-  // header se vería también en el detalle, donde no afecta lo que se muestra.
   const listView = (
     <>
       <div className="mb-4 flex items-center justify-end gap-2">
@@ -95,8 +83,6 @@ export default function MyTicketList() {
           className="rounded-lg border border-slate-300 px-3 py-2"
         >
           <option value="">Todas</option>
-          {/* Las PENDING no están: son intentos de compra y el backend no
-              las devuelve en "Mis entradas". */}
           {MY_TICKET_FILTERS.map((value) => (
             <option key={value} value={value}>
               {TICKET_STATUS_LABEL[value]}
@@ -124,15 +110,10 @@ export default function MyTicketList() {
       </header>
 
       <Routes>
-        {/* <Route index> es la ruta por defecto del grupo: /mis-entradas exacto */}
         <Route index element={listView} />
 
-        {/* El path no empieza con "/" porque es relativo a /mis-entradas. */}
         <Route path=":id" element={<MyTicketDetails />} />
 
-        {/* Captura sub-rutas inválidas (por ej. /mis-entradas/a/b). Sin esto
-            se vería el encabezado con el cuerpo vacío: /mis-entradas/* ya
-            delegó el resto a este Routes y el 404 de App.tsx no llega. */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </div>

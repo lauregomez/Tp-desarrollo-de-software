@@ -1,8 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest, RoleName } from './auth.types';
 
-// Tipado con RoleName y no con string: un tipo como authorize('ADMN')
-// falla al compilar en vez de bloquear la ruta para todos en silencio.
 export function authorize(...allowedRoles: RoleName[]) {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {

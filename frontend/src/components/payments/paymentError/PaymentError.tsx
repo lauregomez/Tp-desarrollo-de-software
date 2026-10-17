@@ -4,9 +4,6 @@ import { Link } from 'react-router'
 import { PENDING_PURCHASE_KEY } from '../../tickets/buyTickets/BuyTickets.const'
 
 export default function PaymentError() {
-  // La compra terminó (mal): los ids guardados ya no sirven. Si quedaran,
-  // entrar después a /pago/confirmando intentaría consultar una compra
-  // que no va a acreditarse nunca.
   useEffect(() => {
     sessionStorage.removeItem(PENDING_PURCHASE_KEY)
   }, [])

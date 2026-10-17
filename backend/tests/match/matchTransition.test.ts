@@ -14,7 +14,6 @@ describe('isValidTransition', () => {
   });
 
   it('no deja volver un partido publicado a borrador', () => {
-    // Un partido publicado ya puede tener entradas vendidas.
     expect(isValidTransition(MatchStatus.PUBLISHED, MatchStatus.DRAFT)).toBe(false);
   });
 
@@ -22,7 +21,6 @@ describe('isValidTransition', () => {
     expect(isValidTransition(MatchStatus.DRAFT, MatchStatus.FINISHED)).toBe(false);
   });
 
-  // it.each corre el mismo test una vez por cada valor de la lista.
   it.each([MatchStatus.FINISHED, MatchStatus.CANCELLED])(
     '%s es un estado final: no admite ninguna transición',
     (from) => {

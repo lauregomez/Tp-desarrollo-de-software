@@ -13,13 +13,6 @@ import {
   ValidateFailureReason,
 } from './ticket.types';
 
-/**
- * Traduce los motivos de fallo del service a respuestas HTTP.
- * Tenerlo como tabla evita una cadena de if/else en el controller y, al
- * estar tipado con Record<ReserveFailureReason, ...>, TypeScript obliga a
- * contemplar todos los motivos: si mañana se agrega uno nuevo al tipo,
- * la compilación falla hasta que se agregue acá también.
- */
 const RESERVE_ERRORS: Record<
   ReserveFailureReason,
   { status: number; message: string }
@@ -46,9 +39,6 @@ const RESERVE_ERRORS: Record<
   },
 };
 
-/**
- * Misma idea que RESERVE_ERRORS, para la validación en la puerta.
- */
 const VALIDATE_ERRORS: Record<
   ValidateFailureReason,
   { status: number; message: string }
@@ -71,12 +61,6 @@ const VALIDATE_ERRORS: Record<
   },
 };
 
-/**
- * Extrae el usuario autenticado del request.
- * Todas las rutas de este módulo pasan por `authenticate`, así que si no
- * hay usuario es un error de programación (una ruta mal configurada), no
- * una entrada inválida del cliente. Por eso lanza en vez de responder 401.
- */
 function requireUser(req: Request) {
   const { user } = req as AuthRequest;
   if (!user) {
@@ -91,13 +75,6 @@ function isStaff(req: Request): boolean {
 }
 
 export const ticketController = {
-  /**
-   * POST /api/tickets/reserve
-   * Body: { matchId, quantity }
-   *
-   * El userId NUNCA se toma del body: sale del token. Si viniera del
-   * cliente, cualquiera podría reservar entradas a nombre de otro.
-   */
   async reserve(req: Request, res: Response): Promise<void> {
     const user = requireUser(req);
     const { matchId, quantity } = req.body;
@@ -140,16 +117,10 @@ export const ticketController = {
     const user = requireUser(req);
     const { status } = req.query;
 
-    // "Mis entradas" son las pagas: las PENDING son intentos de compra que
-    // pueden no concretarse nunca, y mostrarlas llenaría la lista de
-    // entradas que el usuario no tiene. Por eso ni siquiera se aceptan
-    // como filtro.
     let statusFilter: TicketStatus | TicketStatus[] = SOLD_STATUSES;
     let matchEnded: boolean | undefined;
     if (typeof status === 'string' && status !== '') {
       if (status === 'EXPIRED') {
-        // "Vencida" no se guarda en la base: es una entrada ACTIVE cuyo
-        // partido ya terminó.
         statusFilter = TicketStatus.ACTIVE;
         matchEnded = true;
       } else if (!SOLD_STATUSES.includes(status as TicketStatus)) {
@@ -157,8 +128,6 @@ export const ticketController = {
         return;
       } else {
         statusFilter = status as TicketStatus;
-        // Las vencidas también son ACTIVE en la base: sin esto, el filtro
-        // "Activa" las mostraría.
         if (statusFilter === TicketStatus.ACTIVE) matchEnded = false;
       }
     }
@@ -172,10 +141,6 @@ export const ticketController = {
     res.json(tickets.map(toOwnerTicket));
   },
 
-  /**
-   * GET /api/tickets/:id
-   * Detalle de la entrada, incluye el code para armar el código.
-   */
   async getById(req: Request, res: Response): Promise<void> {
     const user = requireUser(req);
     const id = Number(req.params.id);
@@ -192,10 +157,6 @@ export const ticketController = {
       return;
     }
 
-    // Control de propiedad: un usuario sólo ve sus propias entradas.
-    // Sin esto, cambiando el id en la URL se vería el código ajeno, que es
-    // equivalente a robarle la entrada.
-    // Se responde 404 y no 403 para no revelar que la entrada existe.
     if (ticket.userId !== user .userId && !isStaff(req)) {
       res.status(404).json({ message: 'Entrada no encontrada' });
       return;
@@ -204,16 +165,6 @@ export const ticketController = {
     res.json(isStaff(req) ? toOperatorTicket(ticket) : toOwnerTicket(ticket));
   },
 
-  /**
-   * POST /api/tickets/validate
-   * Body: { code, matchId }
-   *
-   * El asistente le dicta el código al operador, que lo ingresa en el
-   * sistema. `matchId` es el partido que el operador está atendiendo: el
-   * código sólo es único dentro del partido, así que se busca ahí.
-   * Devuelve siempre un campo `valid` para que el frontend del operador
-   * muestre verde o rojo sin interpretar el status code.
-   */
   async validate(req: Request, res: Response): Promise<void> {
     const { code, matchId } = req.body;
 
@@ -231,8 +182,6 @@ export const ticketController = {
       return;
     }
 
-    // Los códigos se generan en mayúsculas; normalizar evita rechazar una
-    // entrada válida porque el operador la tipeó en minúsculas.
     const normalizedCode = code.trim().toUpperCase();
 
     const result = await ticketService.validate(matchId, normalizedCode);
@@ -246,10 +195,6 @@ export const ticketController = {
     res.json({ valid: true, ticket: toOperatorTicket(result.data) });
   },
 
-  /**
-   * GET /api/tickets?matchId=1&status=ACTIVE
-   * Sólo ADMIN. Base del reporte de recaudación por partido.
-   */
   async getAll(req: Request, res: Response): Promise<void> {
     const { matchId, status } = req.query;
 

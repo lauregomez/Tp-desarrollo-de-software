@@ -1,14 +1,11 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
-// Extiende los props nativos de <button> para no perder nada
-// (aria-*, name, form, etc.) y agrega las variantes de estilo.
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
   variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'warning'
   size?:  'icon' | 'sm' | 'md'
 }
 
-// Clases por variante, con los tokens definidos en index.css.
 const VARIANT_CLASS: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary: 'bg-primary text-white hover:brightness-110',
   secondary: 'border border-slate-300 bg-white text-navy hover:bg-canvas',
@@ -27,12 +24,9 @@ export default function Button({
   children,
   variant = 'primary',
   size = 'md',
-  // type='button' por defecto: si no se aclara, el navegador asume
-  // 'submit' y un botón cualquiera dentro de un form lo enviaría.
   type = 'button',
   disabled = false,
   onClick,
-  // El resto de los props nativos se reenvía tal cual al <button>.
   ...rest
 }: ButtonProps) {
   return (

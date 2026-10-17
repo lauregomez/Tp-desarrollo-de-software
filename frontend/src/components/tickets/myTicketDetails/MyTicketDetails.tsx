@@ -13,13 +13,10 @@ export default function MyTicketDetails() {
   const { state } = useLocation()
   const ticketFromState = state as Ticket | null
 
-  // Si venimos con la entrada en el state, arrancamos con el dato puesto
-  // y sin loading: no hay request ni parpadeo de carga.
   const [ticket, setTicket] = useState<Ticket | null>(ticketFromState ?? null)
   const [isLoading, setIsLoading] = useState(!ticketFromState)
 
   useEffect(() => {
-    // Ya tenemos la entrada (o no hay id que pedir): no hace falta la request.
     if (ticketFromState || !id) return
 
     getMyTicket(id, {
@@ -27,9 +24,6 @@ export default function MyTicketDetails() {
         setTicket(data)
         setIsLoading(false)
       },
-      // Sin toast: el bloque de "no encontrada" de abajo ya explica qué pasó.
-      // Acá cae el 404, tanto si la entrada no existe como si es de otro
-      // usuario: el backend responde igual en los dos casos.
       onError: () => setIsLoading(false),
     })
   }, [id, ticketFromState])
@@ -38,7 +32,6 @@ export default function MyTicketDetails() {
     return <p className="text-muted">Cargando entrada…</p>
   }
 
-  // No existe, no es tuya o falló la conexión.
   if (!ticket) {
     return (
       <div className="flex flex-col items-start gap-4">
@@ -77,13 +70,8 @@ export default function MyTicketDetails() {
           <dt className="inline">Estado: </dt>
           <dd className="inline">{TICKET_STATUS_LABEL[ticketDisplayStatus(ticket)]}</dd>
         </div>
-        {/* Sin pricePaid (vista de staff) no mostramos la línea: formatear
-           undefined daría "$ NaN". */}
         {ticket.pricePaid && (
           <div>
-            {/* En PENDING el pago todavía no se confirmó: decir "Precio
-                pagado" sería falso. El monto sí se muestra, porque es lo
-                que va a pagar. */}
             <dt className="inline">
               {ticket.status === 'PENDING' ? 'Precio: ' : 'Precio pagado: '}
             </dt>
@@ -92,17 +80,12 @@ export default function MyTicketDetails() {
         )}
       </dl>
 
-      {/* El código es lo que el asistente le dicta al operador en la
-          cancha. En PENDING todavía no existe: se genera al confirmarse
-          el pago. */}
       <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
         {ticket.code ? (
           <>
             <p className="text-sm font-medium text-navy">Código de acceso</p>
             {ticket.status === 'ACTIVE' && !ticket.expired ? (
               <>
-                {/* Monoespaciada para distinguir 0 de O, y con espacio
-                    entre caracteres porque se dicta de a uno. */}
                 <p className="mt-3 text-center font-mono text-4xl font-bold tracking-[0.3em] text-navy">
                   {ticket.code}
                 </p>
@@ -111,9 +94,6 @@ export default function MyTicketDetails() {
                 </p>
               </>
             ) : (
-              // En una USED o vencida el código queda como registro, pero
-              // chico y atenuado: mostrarlo grande invitaría a presentarla
-              // (una USED ya se usó; una vencida es de un partido terminado).
               <p className="mt-3 text-center font-mono text-sm text-muted line-through">
                 {ticket.code} · {ticket.expired ? 'vencida' : 'ya utilizada'}
               </p>

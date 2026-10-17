@@ -3,13 +3,8 @@ import { Prisma } from '@prisma/client';
 import { courtService, toPublicCourt } from './court.service';
 import { AuthRequest } from '../../middlewares/auth.types';
 
-
-// Los dos campos son String sin @db.VarChar en el schema, así que Prisma usa
-// VARCHAR(191). Validar acá evita que MySQL rechace el insert y termine en un
-// 500 (P2000) en lugar de un 400 con un mensaje claro.
 const MAX_NAME_LENGTH = 191;
 const MAX_ADDRESS_LENGTH = 191;
-// Una dirección real tiene al menos calle y número: "a" no identifica nada.
 const MIN_ADDRESS_LENGTH = 5;
 
 function isAdmin(req: AuthRequest): boolean {
@@ -40,7 +35,6 @@ export const courtController = {
     },
 
     async create(req: Request, res: Response): Promise<void> {
-        // sanitizeCourtInput ya dejó sólo los campos permitidos.
         const { name, address, capacity, clubId } = req.body.sanitizedCourtInput;
 
         if (typeof name !== 'string' || name.trim() === '') {
@@ -131,7 +125,6 @@ export const courtController = {
             return;
         }
 
-        // En el PUT todos los campos son opcionales: sólo se valida lo que vino.
         const { name, address, capacity, clubId } = req.body.sanitizedCourtInput;
 
         if (name !== undefined) {

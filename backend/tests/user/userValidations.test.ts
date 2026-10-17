@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {isValidName, MAX_NAME_LENGTH, keepsAtLeastOneAdmin, canDeactivateUser } from '../../src/modules/user/user.validations';
 describe('isValidName', () => {
-  // it.each corre el mismo test una vez por cada valor de la lista.
   it.each([
     'Juan',
     'María José',
@@ -31,15 +30,12 @@ describe('isValidName', () => {
   });
 
   it('rechaza un nombre más largo que la columna de la base', () => {
-    // MySQL cortaría o fallaría con un error poco claro: mejor un 400
-    // con un mensaje que el usuario entienda.
     expect(isValidName('a'.repeat(MAX_NAME_LENGTH + 1))).toBe(false);
   });
 });
 
 describe('keepsAtLeastOneAdmin', () => {
   it('permite la operación si el usuario afectado no es admin', () => {
-    // Sacar a un USER no cambia cuántos admins quedan.
     expect(keepsAtLeastOneAdmin(false, 1)).toBe(true);
   });
 
@@ -49,16 +45,12 @@ describe('keepsAtLeastOneAdmin', () => {
   });
 
   it('no deja sacar al último admin', () => {
-    // Sin administradores nadie puede entrar al panel, y no hay forma
-    // de recuperarlo desde la aplicación.
     expect(keepsAtLeastOneAdmin(true, 1)).toBe(false);
   });
 });
 
 describe('canDeactivateUser', () => {
   it('permite la baja si no quedan entradas sin usar', () => {
-    // Las USED no cuentan: son historial, y conservarlas es el motivo
-    // por el que la baja es lógica y no un borrado.
     expect(canDeactivateUser(0)).toBe(true);
   });
 

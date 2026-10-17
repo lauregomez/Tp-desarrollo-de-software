@@ -12,8 +12,6 @@ export default function Register() {
   const [errors, setErrors] = useState(initialRegisterErrors)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Error que devuelve el backend (409 por email repetido, servidor
-  // caído). Va separado de `errors` porque no pertenece a un campo.
   const [serverError, setServerError] = useState<string | null>(null)
 
   const nameRef = useRef<HTMLInputElement>(null)
@@ -35,9 +33,6 @@ export default function Register() {
     event.preventDefault()
     setServerError(null)
 
-    // Validación de a un campo por vez: se marca el error, se enfoca el
-    // input con la ref y se corta con return, así el cursor queda parado
-    // justo en el campo que hay que corregir.
     if (!isValidName(form.name)) {
       setErrors({ ...initialRegisterErrors, name: true })
       nameRef.current?.focus()
@@ -73,8 +68,6 @@ export default function Register() {
         password: form.password,
       })
 
-      // El registro no devuelve token: mandamos al login para que
-      // inicie sesión con los datos que acaba de crear.
       successToast('¡Cuenta creada! Ya podés iniciar sesión.')
       navigate('/login', { replace: true })
     } catch (error) {
@@ -93,8 +86,6 @@ export default function Register() {
       hasError ? 'border-brand' : 'border-slate-300'
     }`
 
-  // El hint se arma a partir de los flags, mostrando el del primer
-  // campo inválido.
   const hint = errors.name
     ? 'Ingresá un nombre válido, sin números.'
     : errors.lastName
@@ -168,8 +159,6 @@ export default function Register() {
             ref={passwordRef}
             value={form.password}
             onChange={(event) => handleInputChange(event, 'password')}
-            // new-password: le avisa al navegador que sugiera una clave
-            // nueva en vez de autocompletar una guardada.
             autoComplete="new-password"
             aria-invalid={errors.password}
             className={inputClass(errors.password)}

@@ -20,15 +20,10 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
-  // Devolver null es la forma de "no renderizar nada" en React.
-  // Así el modal no ocupa lugar en el DOM mientras está cerrado.
   if (!open) {
     return null
   }
 
-  // El click burbujea desde el contenido hasta el overlay. Comparar
-  // target con currentTarget distingue el click en el fondo (cerrar)
-  // del click dentro de la tarjeta (no cerrar).
   function handleOverlayClick(event: MouseEvent<HTMLDivElement>) {
     if (event.target === event.currentTarget) {
       onCancel()
@@ -40,8 +35,6 @@ export default function ConfirmModal({
       onClick={handleOverlayClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
     >
-      {/* role="dialog" + aria-modal avisan a los lectores de pantalla
-          que lo de atrás queda inerte mientras el modal está abierto. */}
       <div
         role="dialog"
         aria-modal="true"

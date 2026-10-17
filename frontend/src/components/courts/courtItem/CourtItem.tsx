@@ -4,10 +4,6 @@ import Button from '../../shared/button/Button'
 import ConfirmModal from '../../confirmModal/ConfirmModal'
 import type { Court } from '../../../types/court'
 
-// La tarjeta recibe el nombre del club ya resuelto en vez de pedirlo al servidor:
-// CourtList carga los clubes una sola vez y evita una request por cada cancha.
-// onEdit y onDelete son callbacks del padre: la tarjeta sólo avisa qué quiso
-// hacer el usuario y CourtList decide qué significa.
 interface CourtItemProps {
   court: Court
   clubName: string
@@ -18,12 +14,8 @@ interface CourtItemProps {
 export default function CourtItem({ court, clubName, onEdit, onDelete }: CourtItemProps) {
   const navigate = useNavigate()
 
-  // Estado local: el modal es efímero, no hace falta una ruta para él.
-  // Vive acá y no en CourtList para que cada tarjeta tenga el suyo.
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  // Cerramos el modal antes de avisar hacia arriba, así la tarjeta
-  // no queda con el diálogo abierto mientras se procesa el borrado.
   const handleConfirmDelete = () => {
     setConfirmOpen(false)
     onDelete(court.id)
@@ -37,8 +29,6 @@ export default function CourtItem({ court, clubName, onEdit, onDelete }: CourtIt
       <p className="text-muted">Capacidad: {court.capacity}</p>
 
       <div className="flex flex-wrap gap-2">
-        {/* Mandamos la cancha en el state: el detalle la muestra
-            al instante sin volver a pedirla al servidor. */}
         <Button
           variant="secondary"
           size="sm"
@@ -46,13 +36,9 @@ export default function CourtItem({ court, clubName, onEdit, onDelete }: CourtIt
         >
           Ver detalle
         </Button>
-        {/* Mandamos la cancha entera hacia arriba: CourtList la pasa
-            en el state de la navegación para precargar el formulario. */}
         <Button variant="primary" size="sm" onClick={() => onEdit(court)}>
           Editar
         </Button>
-        {/* Este botón NO borra: abre el modal. El borrado real
-            ocurre recién en handleConfirmDelete. */}
         <Button variant="danger" size="sm" onClick={() => setConfirmOpen(true)}>
           Eliminar
         </Button>

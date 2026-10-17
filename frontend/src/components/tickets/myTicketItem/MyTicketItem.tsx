@@ -5,8 +5,6 @@ import { STATUS_CLASS } from './MyTicketItem.const'
 import { TICKET_STATUS_LABEL, ticketDisplayStatus } from '../../../types/ticket'
 import type { Ticket } from '../../../types/ticket'
 
-// La entrada entra por props: MyTicketList ya la tiene del listado
-// y esta tarjeta sólo la muestra.
 interface MyTicketItemProps {
   ticket: Ticket
 }
@@ -40,8 +38,6 @@ export default function MyTicketItem({ ticket }: MyTicketItemProps) {
       )}
 
       <div className="flex flex-wrap gap-2">
-        {/* Mandamos la entrada en el state: el detalle la muestra al
-            instante sin volver a pedirla al servidor. */}
         <Button
           variant="secondary"
           size="sm"

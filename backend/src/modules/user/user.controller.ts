@@ -103,9 +103,6 @@ export const userController = {
       });
       return;
     }
-        // Cambiarle el rol al último ADMIN deja el sistema sin administración,
-    // igual que eliminarlo. Es el mismo agujero por otra vía, así que
-    // aplica la misma regla.
     if (role !== undefined) {
       if (!isRoleName(role)) {
         res.status(400).json({
@@ -116,8 +113,6 @@ export const userController = {
 
       const targetRole = await userService.findRoleName(id);
 
-      // Sólo importa si el rol nuevo NO es ADMIN: reasignarle el mismo
-      // rol no cambia el conteo.
       if (targetRole === 'ADMIN' && role !== 'ADMIN') {
         const adminCount = await userService.countAdmins();
         if (!keepsAtLeastOneAdmin(true, adminCount)) {
@@ -185,8 +180,6 @@ export const userController = {
       return;
     }
 
-    // Mismas dos reglas que el borrado: no darse de baja a uno mismo
-    // ni dejar al sistema sin administradores.
     const { user } = req as AuthRequest;
     if (user && !canDeleteUser(id, user.userId)) {
       res.status(409).json({ message: 'No podés desactivar tu propio usuario' });
@@ -209,8 +202,6 @@ export const userController = {
       }
     }
 
-    // La regla de la cátedra: las entradas ya usadas son historial y no
-    // bloquean; las que todavía no se usaron, sí.
     const unusedTickets = await userService.countUnusedTickets(id);
     if (!canDeactivateUser(unusedTickets)) {
       res.status(409).json({
@@ -224,7 +215,6 @@ export const userController = {
     res.json(updated);
   },
 
-  /** Revierte la baja lógica. */
   async activate(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {

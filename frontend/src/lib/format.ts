@@ -27,9 +27,6 @@ export function formatTime(iso: string): string {
   }).format(new Date(iso))
 }
 
-// Un partido finalizado o suspendido puede quedar sin club o sin cancha si
-// después se borraron (la foránea queda en null). Estas funciones dan el
-// texto a mostrar en ese caso, en un solo lugar para todas las pantallas.
 export function clubName(club: { name: string } | null): string {
   return club?.name ?? 'Club eliminado'
 }

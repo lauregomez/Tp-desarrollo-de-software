@@ -4,21 +4,11 @@ export const SOLD_STATUSES: TicketStatus[] = [TicketStatus.ACTIVE, TicketStatus.
 
 export type { Ticket, TicketStatus };
 
-// DTOs derivados de Prisma: si cambia el schema, rompe la compilación.
 export type CreateTicketDto = Prisma.TicketUncheckedCreateInput;
 export type UpdateTicketDto = Prisma.TicketUncheckedUpdateInput;
 
-/**
- * Reglas de negocio centralizadas.
- * Se definen acá para que el service y el controller usen el mismo valor
- * y no queden números mágicos repetidos por el código.
- */
 export const MAX_TICKETS_PER_USER_PER_MATCH = 5;
 
-/**
- * Intención de compra: no es una fila de la tabla tickets.
- * El service la traduce en N tickets independientes (N códigos distintos).
- */
 export type ReserveTicketDto = {
   userId: number;
   matchId: number;
@@ -29,16 +19,9 @@ export type TicketFilters = {
   userId?: number;
   matchId?: number;
   status?: TicketStatus | TicketStatus[];
-  // true: sólo entradas de partidos terminados; false: sólo de partidos que
-  // no terminaron; sin definir: no filtra por fecha.
   matchEnded?: boolean;
 };
 
-/**
- * Motivos de fallo de la reserva.
- * El service no puede responder HTTP, así que devuelve un motivo tipado
- * y el controller lo traduce a un status code.
- */
 export type ReserveFailureReason =
   | 'MATCH_NOT_FOUND'
   | 'MATCH_NOT_PUBLISHED'
@@ -46,21 +29,12 @@ export type ReserveFailureReason =
   | 'USER_LIMIT_EXCEEDED'
   | 'NOT_ENOUGH_CAPACITY';
 
-  /**
- * Motivos por los que el operador no puede dar por válida una entrada.
- * TICKET_ALREADY_USED cubre también el caso en que otro operador la
- * validó en simultáneo: para quien está en la puerta el resultado es el mismo.
- */
 export type ValidateFailureReason =
   | 'TICKET_NOT_FOUND'
   | 'TICKET_ALREADY_USED'
   | 'TICKET_NOT_PAID'
   | 'MATCH_NOT_PUBLISHED';
 
-/**
- * Union discriminada: TypeScript obliga a chequear `ok` antes de acceder
- * a `data`, así que es imposible olvidarse de manejar el caso de error.
- */
 export type ServiceResult<T, R> =
   | { ok: true; data: T }
   | { ok: false; reason: R };
